@@ -6,10 +6,9 @@ class EuropeanVanillaOption : public Option {
 private:
     double _strike;
 public:
-    EuropeanVanillaOption(double, double) : Option(_expiry) {}; //pas sur de l'implementation de _expiray
-
+    EuropeanVanillaOption(double expiry, double strike);
+    OptionType getOptionType() const override;
+    double payoff(double) const override;
 };
-
-
 
 #endif
