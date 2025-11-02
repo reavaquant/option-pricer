@@ -1,6 +1,4 @@
 #include "PutOption.hpp"
-#include "EuropeanVanillaOption.hpp"
-using namespace std;
 
 PutOption::PutOption(double expiry, double strike) : EuropeanVanillaOption(expiry, strike) {}
 
