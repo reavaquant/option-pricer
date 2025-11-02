@@ -7,7 +7,7 @@ private:
     double _strike;
 public:
     EuropeanVanillaOption(double expiry, double strike);
-    OptionType getOptionType() const override;
+    OptionType getOptionType() const override = 0;
     double payoff(double) const override;
 };
 
