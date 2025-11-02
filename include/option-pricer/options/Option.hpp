@@ -1,13 +1,13 @@
-#ifndef OPTION_H
-#define OPTION_H
+#ifndef OPTION_HPP
+#define OPTION_HPP
 
 #include <iostream>
 
 class Option{
-private:
+protected:
     double _expiry;
 public:
-    Option(double){};
+    Option(double) {};
     double getExpiry() const;
     virtual double payoff(double) const;
     virtual ~Option(){}
