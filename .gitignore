@@ -1,0 +1,42 @@
+# Build & CMake
+/build/
+/build-*/
+/cmake-build-*/
+/install/
+/CMakeFiles/
+/CMakeCache.txt
+/Testing/
+/_testing/
+/CTestTestfile.cmake
+/Makefile
+/*.cbp
+compile_commands.json
+
+# IDE & OS
+.vscode/
+.idea/
+*.user
+.DS_Store
+Thumbs.db
+
+# Binaries & libs
+*.exe
+*.dll
+*.dylib
+*.so
+*.a
+*.lib
+*.pdb
+*.obj
+*.o
+
+# Coverage / profiling
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+lcov.info
+
+# Logs & misc
+*.log
+*.tmp
