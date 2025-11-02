@@ -3,13 +3,12 @@
 #include "Option.hpp"
 
 class EuropeanVanillaOption : public Option {
-private:
+protected:
     double _strike;
 public:
-    EuropeanVanillaOption(double, double) : Option(_expiry) {}; //pas sur de l'implementation de _expiray
-
+    EuropeanVanillaOption(double expiry, double strike);
+    OptionType getOptionType() const override = 0;
+    double payoff(double underlying) const override = 0;
 };
-
-
 
 #endif
