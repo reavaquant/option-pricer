@@ -6,11 +6,13 @@ add_library(option_pricer_lib
     src/options/EuropeanVanillaOption.cpp
     src/options/CallOption.cpp
     src/options/PutOption.cpp
+    src/pricing/BlackScholesPricer.cpp
     # autre cpp apres
 )
 target_include_directories(option_pricer_lib PUBLIC
     include
     include/option-pricer/options
+    include/option-pricer/pricing
 )
 
 add_executable(option_pricer src/main.cpp)
@@ -19,4 +21,3 @@ enable_testing()
 if (MESIFI_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
-
