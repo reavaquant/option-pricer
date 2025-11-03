@@ -8,7 +8,7 @@ enum class OptionType {
 
 class Option{
 protected:
-    double _expiry;
+    double expiry_;
 public:
     Option(double expiry);
     double getExpiry() const;

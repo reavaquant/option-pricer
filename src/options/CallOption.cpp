@@ -5,5 +5,5 @@ CallOption::CallOption(double expiry, double strike) : EuropeanVanillaOption(exp
 OptionType CallOption::getOptionType() const { return OptionType::Call; }
 
 double CallOption::payoff(double underlying) const {
-    return underlying > _strike ? underlying - _strike : 0.0;
+    return underlying > strike_ ? underlying - strike_ : 0.0;
 }

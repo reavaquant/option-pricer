@@ -5,5 +5,5 @@ PutOption::PutOption(double expiry, double strike) : EuropeanVanillaOption(expir
 OptionType PutOption::getOptionType() const { return OptionType::Put; }
 
 double PutOption::payoff(double underlying) const {
-    return _strike >= underlying ? _strike - underlying : 0.0;
+    return strike_ >= underlying ? strike_ - underlying : 0.0;
 }

@@ -1,8 +1,12 @@
 #include "EuropeanVanillaOption.hpp"
 #include <iostream>
 
-EuropeanVanillaOption::EuropeanVanillaOption(double expiry, double strike) : Option(expiry), _strike(strike) {
+EuropeanVanillaOption::EuropeanVanillaOption(double expiry, double strike) : Option(expiry), strike_(strike) {
     if (expiry < 0.0 || strike < 0.0) {
         std::cerr << "expiry and strike price must be nonnegative" << std::endl;
     }
+}
+
+double EuropeanVanillaOption::getStrike() const {
+    return strike_;
 }
