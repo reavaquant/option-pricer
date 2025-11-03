@@ -7,12 +7,14 @@ add_library(option_pricer_lib
     src/options/CallOption.cpp
     src/options/PutOption.cpp
     src/pricing/BlackScholesPricer.cpp
+    src/datastruct/BinaryTree.cpp
     # autre cpp apres
 )
 target_include_directories(option_pricer_lib PUBLIC
     include
     include/option-pricer/options
     include/option-pricer/pricing
+    include/option-pricer/datastruct
 )
 
 add_executable(option_pricer src/main.cpp)
