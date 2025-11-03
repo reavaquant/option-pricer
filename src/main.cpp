@@ -2,6 +2,7 @@
 #include "CallOption.hpp"
 #include "PutOption.hpp"
 #include "BlackScholesPricer.hpp"
+#include "BinaryTree.hpp"
 
 int main() {
     CallOption call(1.0, 100.0);
@@ -25,6 +26,22 @@ int main() {
     std::cout << "Put delta = " << putPricer.delta() << '\n';
 
     std::cout << "Call price via operator() = " << callPricer() << '\n'; // operator() simply renvoie price()
+
+    // ---- BinaryTree ----
+    BinaryTree<double> tree(3);
+    tree.setNode(0, 0, 100.0);
+    tree.setNode(1, 0, 110.0);
+    tree.setNode(1, 1, 90.0);
+    tree.setNode(2, 0, 121.0);
+    tree.setNode(2, 1, 99.0);
+    tree.setNode(2, 2, 81.0);
+    tree.setNode(3, 0, 133.1);
+    tree.setNode(3, 1, 108.9);
+    tree.setNode(3, 2, 89.1);
+    tree.setNode(3, 3, 72.9);
+
+    std::cout << "\nBinary tree (depth " << tree.depth() << "):\n";
+    tree.display(std::cout);
 
     return 0;
 }
