@@ -2,7 +2,6 @@
 #include <iosfwd>
 #include <vector>
 
-// Arbre triangulaire pour CRR : niveau n contient n+1 éléments.
 template <class T>
 class BinaryTree {
 public:
