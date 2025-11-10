@@ -3,6 +3,8 @@
 #include <stdexcept>
 
 #include "option-pricer/options/CallOption.hpp"
+#include "option-pricer/options/EuropeanDigitalCallOption.hpp"
+#include "option-pricer/options/EuropeanDigitalPutOption.hpp"
 #include "option-pricer/options/PutOption.hpp"
 #include "option-pricer/pricing/BlackScholesPricer.hpp"
 #include "option-pricer/pricing/CRRPricer.hpp"
@@ -14,6 +16,8 @@ constexpr double kEps = 1e-6;
 int main() {
     CallOption call(1.0, 100.0);
     PutOption put(1.0, 100.0);
+    EuropeanDigitalCallOption digital_call(1.0, 100.0);
+    EuropeanDigitalPutOption digital_put(1.0, 100.0);
 
     // ----BlackScholesPricer tests----
     const double spot = 100.0;
@@ -37,6 +41,17 @@ int main() {
     assert(std::fabs(call_pricer.delta() - expected_call_delta) < kEps);
     assert(std::fabs(put_pricer.delta() - expected_put_delta) < kEps);
 
+    BlackScholesPricer digital_call_pricer(&digital_call, spot, rate, vol);
+    BlackScholesPricer digital_put_pricer(&digital_put, spot, rate, vol);
+    const double expected_digital_call = 0.5323248154537634;
+    const double expected_digital_put = 0.41890460904695065;
+    assert(std::fabs(digital_call_pricer.price() - expected_digital_call) < kEps);
+    assert(std::fabs(digital_put_pricer.price() - expected_digital_put) < kEps);
+
+    const double expected_digital_delta = 0.018762017345846895;
+    assert(std::fabs(digital_call_pricer.delta() - expected_digital_delta) < kEps);
+    assert(std::fabs(digital_put_pricer.delta() + expected_digital_delta) < kEps);
+
     // limit case
     CallOption call_expired(0.0, 100.0);
     PutOption put_expired(0.0, 100.0);
@@ -46,6 +61,15 @@ int main() {
     assert(std::fabs(call_expired_pricer.delta() - 1.0) < kEps);
     assert(std::fabs(put_expired_pricer.price() - 10.0) < kEps);
     assert(std::fabs(put_expired_pricer.delta() + 1.0) < kEps);
+
+    EuropeanDigitalCallOption digital_call_expired(0.0, 100.0);
+    EuropeanDigitalPutOption digital_put_expired(0.0, 100.0);
+    BlackScholesPricer digital_call_expired_pricer(&digital_call_expired, 110.0, rate, vol);
+    BlackScholesPricer digital_put_expired_pricer(&digital_put_expired, 90.0, rate, vol);
+    assert(std::fabs(digital_call_expired_pricer.price() - 1.0) < kEps);
+    assert(std::fabs(digital_put_expired_pricer.price() - 1.0) < kEps);
+    assert(std::fabs(digital_call_expired_pricer.delta()) < kEps);
+    assert(std::fabs(digital_put_expired_pricer.delta()) < kEps);
 
     // ----CRRPricer tests----
     constexpr double crrS0 = 100.0;
