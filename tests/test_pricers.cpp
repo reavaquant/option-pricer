@@ -1,9 +1,11 @@
 #include <cassert>
 #include <cmath>
+#include <stdexcept>
 
 #include "option-pricer/options/CallOption.hpp"
 #include "option-pricer/options/PutOption.hpp"
 #include "option-pricer/pricing/BlackScholesPricer.hpp"
+#include "option-pricer/pricing/CRRPricer.hpp"
 
 namespace {
 constexpr double kEps = 1e-6;
@@ -44,6 +46,55 @@ int main() {
     assert(std::fabs(call_expired_pricer.delta() - 1.0) < kEps);
     assert(std::fabs(put_expired_pricer.price() - 10.0) < kEps);
     assert(std::fabs(put_expired_pricer.delta() + 1.0) < kEps);
+
+    // ----CRRPricer tests----
+    constexpr double crrS0 = 100.0;
+    constexpr double crrU = 1.2;
+    constexpr double crrD = 0.8;
+    constexpr double crrR = 1.05;
+    constexpr int crrDepth = 3;
+
+    CallOption crr_call(1.0, 100.0);
+    CRRPricer crr_call_pricer(&crr_call, crrDepth, crrS0, crrU, crrD, crrR);
+    const double expected_crr_call = 21.123528776590003;
+    assert(std::fabs(crr_call_pricer(false) - expected_crr_call) < kEps);
+    assert(std::fabs(crr_call_pricer(true) - expected_crr_call) < kEps);
+    crr_call_pricer.compute();
+    assert(std::fabs(crr_call_pricer.get(0, 0) - expected_crr_call) < kEps);
+
+    PutOption crr_put(1.0, 100.0);
+    CRRPricer crr_put_pricer(&crr_put, crrDepth, crrS0, crrU, crrD, crrR);
+    const double expected_crr_put = 7.507288629737602;
+    assert(std::fabs(crr_put_pricer(false) - expected_crr_put) < kEps);
+    assert(std::fabs(crr_put_pricer(true) - expected_crr_put) < kEps);
+
+    bool null_option_thrown = false;
+    try {
+        CRRPricer invalid_pricer(nullptr, crrDepth, crrS0, crrU, crrD, crrR);
+    } catch (const std::invalid_argument&) {
+        null_option_thrown = true;
+    }
+    assert(null_option_thrown);
+
+    bool arbitrage_params_thrown = false;
+    try {
+        CallOption dummy(1.0, 100.0);
+        CRRPricer invalid_params(&dummy, crrDepth, crrS0, 0.9, 0.95, 0.9);
+        (void)invalid_params;
+    } catch (const std::invalid_argument&) {
+        arbitrage_params_thrown = true;
+    }
+    assert(arbitrage_params_thrown);
+
+    bool negative_depth_thrown = false;
+    try {
+        CallOption dummy(1.0, 100.0);
+        CRRPricer invalid_depth(&dummy, -1, crrS0, crrU, crrD, crrR);
+        (void)invalid_depth;
+    } catch (const std::invalid_argument&) {
+        negative_depth_thrown = true;
+    }
+    assert(negative_depth_thrown);
 
     return 0;
 }

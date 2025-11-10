@@ -3,10 +3,6 @@
 #include <cassert>
 #include "CRRPricer.hpp"
 
-namespace{
-    
-}
-
 CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : option_(option), depth_(depth), S0_(S0), U_(U), D_(D), R_(R) {
     //arbitrage check
     if (!option_) {
@@ -66,16 +62,6 @@ long double CRRPricer::binom_coeff(int N, int k) {
   return c;
 }
 
-long double CRRPricer::binom_coeff(int N, int k) {
-    if (k < 0 || k > N) return 0.0;
-    int m = (k < (N - k)) ? k : (N - k);
-    double c = 1.0;
-    for (int j = 1; j <= m; ++j) {
-        c = c * (N - m + j) / static_cast<double>(j);
-    }
-    return c;
-}
-
 double CRRPricer::operator()(bool closed_form = false) {
     if (!closed_form) {
         if (!computed_) compute();
@@ -97,3 +83,5 @@ double CRRPricer::operator()(bool closed_form = false) {
     }
     return sum / std::pow(R, depth_);
 }
+
+//<todo> add test
