@@ -10,7 +10,7 @@ public:
     AsianOption(double expiry, std::vector<double> timeSteps);
     std::vector<double> getTimeSteps();
     double payoffPath(std::vector<double> path) const;
+    bool isAsianOption() const override;
 };
-//caca
 
 #endif

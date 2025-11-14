@@ -17,6 +17,7 @@ public:
     virtual OptionType getOptionType() const = 0;
     virtual ~Option(){}
     virtual std::vector<double> payoffPath(const std::vector<double>& path) const;
+    virtual bool isAsianOption() const;
 };
 
 #endif
