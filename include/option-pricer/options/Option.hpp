@@ -15,6 +15,7 @@ public:
     virtual double payoff(double asset_price) const = 0;
     virtual OptionType getOptionType() const = 0;
     virtual ~Option(){}
+    virtual bool isAmericanOption() const;
 };
 
 #endif
