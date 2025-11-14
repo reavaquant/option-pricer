@@ -14,3 +14,7 @@ std::vector<double> Option::payoffPath(const std::vector<double>& path) const {
     }
     return payoff_values;
 }
+
+bool Option::isAsianOption() const {
+    return false;
+}

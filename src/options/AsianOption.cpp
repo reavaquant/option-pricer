@@ -14,3 +14,7 @@ double AsianOption::payoffPath(std::vector<double> path) const {
     }
     return sum / path.size();
 }
+
+bool AsianOption::isAsianOption() const {
+    return true;
+}
