@@ -3,16 +3,18 @@
 
 AsianOption::AsianOption(double expiry, std::vector<double> timeSteps) : Option(expiry), timeSteps_(timeSteps) {}
 
-std::vector<double> AsianOption::getTimeSteps() {
+std::vector<double> AsianOption::getTimeSteps() const {
     return timeSteps_;
 }
 
-double AsianOption::payoffPath(std::vector<double> path) const {
+std::vector<double> AsianOption::payoffPath(const std::vector<double>& path) const {
+    if (path.empty()) return {};
     double sum = 0.0;
     for (double price : path) {
         sum += price;
     }
-    return sum / path.size();
+    const double avg = sum / path.size();
+    return {payoff(avg)};
 }
 
 bool AsianOption::isAsianOption() const {

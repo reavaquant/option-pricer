@@ -8,8 +8,8 @@ private:
     std::vector<double> timeSteps_;
 public:
     AsianOption(double expiry, std::vector<double> timeSteps);
-    std::vector<double> getTimeSteps();
-    double payoffPath(std::vector<double> path) const;
+    std::vector<double> getTimeSteps() const;
+    std::vector<double> payoffPath(const std::vector<double>& path) const override;
     bool isAsianOption() const override;
 };
 
