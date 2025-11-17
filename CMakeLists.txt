@@ -23,6 +23,7 @@ target_include_directories(option_pricer_lib PUBLIC
     include/option-pricer/options
     include/option-pricer/pricing
     include/option-pricer/datastruct
+    include/option-pricer/utils
 )
 
 add_executable(option_pricer src/main.cpp)
