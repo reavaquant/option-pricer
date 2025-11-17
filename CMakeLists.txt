@@ -12,6 +12,7 @@ add_library(option_pricer_lib
     src/pricing/BlackScholesPricer.cpp
     src/pricing/CRRPricer.cpp
     src/datastruct/BinaryTree.cpp
+    src/utils/MT.cpp
     # autre cpp apres
 )
 target_include_directories(option_pricer_lib PUBLIC
