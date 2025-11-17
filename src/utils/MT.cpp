@@ -1,4 +1,4 @@
-#include "MT.hpp"
+#include "option-pricer/utils/MT.hpp"
 
 std::mt19937& MT::generator() {
     static std::mt19937 gen(std::random_device{}());
