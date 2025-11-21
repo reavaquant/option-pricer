@@ -10,6 +10,7 @@ add_library(option_pricer_lib
     src/options/CallOption.cpp
     src/options/PutOption.cpp
     src/pricing/BlackScholesPricer.cpp
+    src/pricing/BlackScholesMCPricer.cpp
     src/pricing/CRRPricer.cpp
     src/datastruct/BinaryTree.cpp
     src/utils/MT.cpp
