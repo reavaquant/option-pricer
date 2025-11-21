@@ -22,6 +22,12 @@ private:
     long long nb_paths_{0};
     double estimate_{0.0};
     double M2_{0.0};
+    double maturity_{0.0};
+    std::vector<double> time_steps_;
+    std::vector<double> drift_dt_;
+    std::vector<double> vol_sqrt_dt_;
+    bool has_vanilla_control_{false};
+    double vanilla_control_mean_{0.0};
 };
 
 #endif
