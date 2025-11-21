@@ -8,6 +8,9 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
     if (!option_) {
         throw std::invalid_argument("CRRPricer: option pointer must not be null");
     }
+    if (option_->isAsianOption()) {
+        throw std::invalid_argument("CRRPricer: Asian options are not supported");
+    }
     if (!(D < R && R < U)) {
         throw std::invalid_argument("CRRPricer: arbitrage detected (need D < R < U)");
     }
