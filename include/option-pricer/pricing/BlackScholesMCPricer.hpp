@@ -9,7 +9,6 @@ class BlackScholesMCPricer {
 public:
     BlackScholesMCPricer(Option* option, double initial_price, double interest_rate, double volatility);
     double price();
-    double delta();
     long long getNbPaths() const;
     void generate(int nb_paths);
     double operator()();

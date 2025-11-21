@@ -10,25 +10,20 @@
 #include "MT.hpp"
 
 
+
 /**
- * @brief Constructor for BlackScholesMCPricer.
- * @param option The option to price.
+ * @brief Construct a BlackScholesMCPricer instance.
+ * @details This pricer uses Monte Carlo simulation to estimate the price of an option.
+ * It is constructed with an option, an initial price, an interest rate, and a volatility.
+ * The option must not be null, and the time steps of the option will be cached for future use.
+ * If the option is an AsianOption, then the time steps of the AsianOption will be used.
+ * Otherwise, the time steps will be initialized with the expiry time of the option.
+ * For vanilla options (i.e., options that are not AsianOptions), a control variate is computed using the closed-form Black-Scholes formula.
+ * This control variate is used to provide a zero-variance estimate of the price of the option.
+ * @param option The option to be priced.
  * @param initial_price The initial price of the underlying asset.
- * @param interest_rate The interest rate.
+ * @param interest_rate The interest rate of the risk-free asset.
  * @param volatility The volatility of the underlying asset.
- * @throws std::invalid_argument If the option pointer is null, or if the time steps in the option are not non-decreasing.
- * 
- * The BlackScholesMCPricer is used to price options using a Monte Carlo simulation.
- * The Monte Carlo simulation is used to generate random paths for the underlying asset.
- * The price of the option is then calculated as the discounted expected value of the payoff along these paths.
- * 
- * For vanilla options, a closed-form Black-Scholes price is used as a control mean to reduce the variance of the Monte Carlo simulation.
- * 
- * The time steps for the option are cached once to avoid per-path dynamic_cast/validation.
- * If the option is an Asian option, then the time steps are retrieved from the Asian option directly.
- * If the option is not an Asian option, then the time steps are assumed to be the expiry of the option.
- * 
- * The time steps must be non-decreasing, otherwise an exception is thrown.
  */
 BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price, double interest_rate, double volatility) : option_(option), initial_price_(initial_price), interest_rate_(interest_rate), volatility_(volatility) {
     if (!option_) {
@@ -87,13 +82,14 @@ long long BlackScholesMCPricer::getNbPaths() const {
 }
 
 
+
 /**
  * @brief Generate Monte Carlo paths for an option.
+ * @details This function generates Monte Carlo paths for an option using the given number of paths.
+ * The paths are generated in parallel using multiple threads to speed up the computation.
+ * The function returns the local statistics of the generated paths, which are used to compute the price of the option.
+ * The function also updates the local statistics of the BlackScholesMCPricer object.
  * @param nb_paths The number of paths to generate.
- * 
- * This function generates Monte Carlo paths for an option.
- * The number of paths can be set to zero to reset the Monte Carlo simulation.
- * The simulate() function will return the estimated price of the option.
  */
 void BlackScholesMCPricer::generate(int nb_paths) {
     if (nb_paths <= 0) {
