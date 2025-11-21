@@ -18,6 +18,7 @@ public:
     virtual ~Option(){}
     virtual std::vector<double> payoffPath(const std::vector<double>& path) const;
     virtual bool isAsianOption() const;
+    virtual bool isAmericanOption() const;
 };
 
 #endif
