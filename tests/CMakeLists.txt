@@ -9,3 +9,7 @@ add_test(NAME pricers COMMAND test_pricers)
 add_executable(test_binarytree test_binarytree.cpp)
 target_link_libraries(test_binarytree PRIVATE option_pricer_lib)
 add_test(NAME binarytree COMMAND test_binarytree)
+
+add_executable(test_mt test_mt.cpp)
+target_link_libraries(test_mt PRIVATE option_pricer_lib)
+add_test(NAME mt COMMAND test_mt)
