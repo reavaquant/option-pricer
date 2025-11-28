@@ -8,7 +8,8 @@
 #include "option-pricer/options/EuropeanDigitalCallOption.hpp"
 #include "option-pricer/options/EuropeanDigitalPutOption.hpp"
 #include "option-pricer/options/PutOption.hpp"
-#include "option-pricer/options/AmericanOption.hpp"
+#include "option-pricer/options/AmericanCallOption.hpp"
+#include "option-pricer/options/AmericanPutOption.hpp"
 
 
 int main() {
@@ -16,6 +17,8 @@ int main() {
     PutOption put(1.0, 100.0);
     EuropeanDigitalCallOption digital_call(1.0, 100.0);
     EuropeanDigitalPutOption digital_put(1.0, 100.0);
+    AmericanCallOption american_call(1.0, 100.0);
+    AmericanPutOption american_put(1.0, 100.0);
     const std::vector<double> asian_time_steps = {0.25, 0.5, 0.75, 1.0};
     AsianCallOption asian_call(1.0, asian_time_steps, 100.0);
     AsianPutOption asian_put(1.0, asian_time_steps, 100.0);
@@ -54,6 +57,14 @@ int main() {
     assert(std::abs(digital_put.payoff(80.0) - 1.0) < 1e-9);
     assert(std::abs(digital_put.payoff(101.0)) < 1e-9);
 
+    assert(american_call.isAmericanOption());
+    assert(american_put.isAmericanOption());
+    assert(american_call.getOptionType() == OptionType::Call);
+    assert(american_put.getOptionType() == OptionType::Put);
+    assert(std::abs(american_call.payoff(120.0) - 20.0) < 1e-9);
+    assert(std::abs(american_call.payoff(90.0)) < 1e-9);
+    assert(std::abs(american_put.payoff(80.0) - 20.0) < 1e-9);
+    assert(std::abs(american_put.payoff(120.0)) < 1e-9);
     std::vector<double> asian_call_path = {90.0, 110.0, 120.0, 100.0};
     const auto asian_call_payoffs = asian_call.payoffPath(asian_call_path);
     assert(asian_call_payoffs.size() == 1);
