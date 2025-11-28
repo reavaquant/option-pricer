@@ -1,5 +1,6 @@
 #pragma once
 #include <iosfwd>
+#include <iostream>
 #include <vector>
 
 template <class T>
@@ -14,7 +15,7 @@ public:
   void setNode(int n, int i, const T& value);
   T getNode(int n, int i) const;
 
-  void display(std::ostream& os) const;
+  void display(std::ostream& os = std::cout) const;
 
 private:
   int depth_{0};
