@@ -5,7 +5,7 @@
 
 class AsianCallOption: public AsianOption {
 public:
-    AsianCallOption(double expiry, std::vector<double> timeSteps, double strike);
+    AsianCallOption(std::vector<double> timeSteps, double strike);
     double payoff(double asset_price) const override;
     OptionType getOptionType() const override;
 private:

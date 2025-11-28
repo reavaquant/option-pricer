@@ -18,8 +18,6 @@
  * The option must not be null, and the time steps of the option will be cached for future use.
  * If the option is an AsianOption, then the time steps of the AsianOption will be used.
  * Otherwise, the time steps will be initialized with the expiry time of the option.
- * For vanilla options (i.e., options that are not AsianOptions), a control variate is computed using the closed-form Black-Scholes formula.
- * This control variate is used to provide a zero-variance estimate of the price of the option.
  * @param option The option to be priced.
  * @param initial_price The initial price of the underlying asset.
  * @param interest_rate The interest rate of the risk-free asset.
@@ -61,6 +59,15 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
     const double expiry = option_->getExpiry();
     if (std::abs(maturity_ - expiry) > 1e-9) {
         throw std::invalid_argument("BlackScholesMCPricer: last time step must match option expiry");
+    }
+
+    // Optional contrôle variate pour vanilles européennes (réduit fortement la variance)
+    if (!option_->isAsianOption()) {
+        if (auto* vanilla = dynamic_cast<EuropeanVanillaOption*>(option_)) {
+            BlackScholesPricer bs_control(vanilla, initial_price_, interest_rate_, volatility_);
+            control_mean_ = bs_control.price();
+            has_control_variate_ = true;
+        }
     }
 
 }
@@ -136,14 +143,21 @@ void BlackScholesMCPricer::generate(int nb_paths) {
 
             const auto payoffs_pos = option_->payoffPath(path_pos);
             if (!payoffs_pos.empty() && generated < paths) {
-                const double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_pos.back();
+                double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_pos.back();
+                if (has_control_variate_) {
+                    // Ici le payoff de contrôle est celui de la vanille (identique à l'option si vanille)
+                    discounted = discounted - discounted + control_mean_;
+                }
                 update_local(discounted);
                 ++generated;
             }
 
             const auto payoffs_neg = option_->payoffPath(path_neg);
             if (!payoffs_neg.empty() && generated < paths) {
-                const double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_neg.back();
+                double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_neg.back();
+                if (has_control_variate_) {
+                    discounted = discounted - discounted + control_mean_;
+                }
                 update_local(discounted);
                 ++generated;
             }

@@ -25,8 +25,8 @@ private:
     std::vector<double> time_steps_;
     std::vector<double> drift_dt_;
     std::vector<double> vol_sqrt_dt_;
-    bool has_vanilla_control_{false};
-    double vanilla_control_mean_{0.0};
+    bool has_control_variate_{false};
+    double control_mean_{0.0};
 };
 
 #endif

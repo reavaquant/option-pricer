@@ -38,7 +38,7 @@ Il valide l'option (\texttt{option} non nulle), récupère une fois pour toutes 
   \item si l'option est asiatique.
   \item sinon, un unique pas à l'échéance (\texttt{expiry}).
 \end{itemize}
-Les temps doivent être non décroissants. 
+Les temps doivent être non décroissants et le dernier doit coïncider avec l'échéance (sinon exception). 
 Pour chaque intervalle $\Delta t$, on pré-calculte deux quantités: 
 \[
 \texttt{drift\_dt\_[i]} = \left(r - \tfrac12 \sigma^2\right)\Delta t, 
@@ -82,16 +82,10 @@ On remplit deux buffers \texttt{path\_pos} et \texttt{path\_neg} \emph{locaux au
 Pour une européenne, seul le dernier point est utilisé par le payoff; pour une asiatique, toute la trajectoire est lue.
 Le payoff est actualisé par $e^{-rT}$ (multiplicateur \emph{d'actualisation}).
 
-\paragraph{Contrôle de variance (vanille).}
-Si l'option est une \emph{vanille européenne}, on calcule une fois le prix Black--Scholes fermé \texttt{vanilla\_control\_mean\_}. 
-Dans le code fourni, chaque échantillon est ensuite remplacé par cette valeur: c'est un \emph{contrôle parfait} (corrélation $1$) qui donne une variance nulle et donc récupère exactement le prix BS. 
-Cela sert à \emph{valider} la chaîne MC et à comparer aux produits path-dépendants. 
-(\emph{Remarque}: ce contrôle n'était pas imposé par la consigne, c'est une amélioration.)
+Les tirages pseudo-aléatoires proviennent d'un moteur Mersenne \emph{thread\_local}: chaque thread dispose de son générateur, éliminant toute contention ou data race sur le RNG.
 
-\paragraph{Effet sur la convergence.}
-Avec un contrôle parfait, l'estimateur Monte Carlo est centré \emph{exactement} sur la valeur fermée et sa variance empirique $s^2$ tombe à zéro (ou quasi zéro numériquement). 
-La largeur d'un IC à $95\%$ vaut $2\times 1{,}96\times s/\sqrt{n}$: ici $s\approx 0$, donc l'IC s'écrase et le prix retourné coïncide avec Black--Scholes dès quelques trajectoires. 
-Ce mécanisme assure le \emph{bon prix} pour les vanilles européennes; pour les produits sans formule fermée (asiatiques, américains), on revient à la convergence classique en $1/\sqrt{n}$.
+\paragraph{Contrôle variate (vanilles).}
+Si l'option est une vanille européenne, on active un contrôle variate parfait: on calcule une fois le prix Black--Scholes fermé et, pour chaque trajectoire, on remplace l'échantillon par \texttt{payoff - payoff + prix\_BS} (variance quasi nulle et prix identique à la formule). Pour les options path-dépendantes ou américaines, le contrôle n'est pas utilisé et l'estimateur reste purement Monte Carlo.
 
 \subsection{Statistiques en ligne et agrégation}
 
@@ -101,9 +95,9 @@ Chaque thread retourne un triplet compact:
 long long n; double mean; double M2;
 \end{verbatim}
 \begin{itemize}
-  \item $n$ : nombre d'échantillons produits par le thread,
-  \item \texttt{mean} : moyenne en ligne (algorithme de \textbf{Welford}), 
-  \item \texttt{M2} : somme des carrés centrés, utile pour la variance $s^2=M2/(n-1)$.
+\item $n$ : nombre d'échantillons produits par le thread,
+\item \texttt{mean} : moyenne en ligne (algorithme de \textbf{Welford}), 
+\item \texttt{M2} : somme des carrés centrés, utile pour la variance $s^2=M2/(n-1)$.
 \end{itemize}
 
 \paragraph{Welford (définition).}
@@ -128,7 +122,7 @@ C'est \emph{thread-safe} car chaque thread calcule d'abord ses statistiques \emp
 \subsection{Différences}
 
 \begin{itemize}
-  \item \emph{Différences/plus} : parallélisation multi-threads et contrôle de variance pour vanilles ne sont pas imposés par l'énoncé mais améliorent vitesse et stabilité.
+  \item \emph{Différences/plus} : parallélisation multi-threads, tirages \texttt{thread\_local} (sécurisés en présence de threads), validation stricte des dates de monitoring, antithétiques et estimation en ligne sans stockage.
 \end{itemize}
 
 \end{document}

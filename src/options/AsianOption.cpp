@@ -1,7 +1,18 @@
 #include "AsianOption.hpp"
+#include <stdexcept>
+#include <utility>
 #include <vector>
 
-AsianOption::AsianOption(double expiry, std::vector<double> timeSteps) : Option(expiry), timeSteps_(timeSteps) {}
+namespace {
+double extractExpiry(const std::vector<double>& timeSteps) {
+    if (timeSteps.empty()) {
+        throw std::invalid_argument("AsianOption: time steps cannot be empty");
+    }
+    return timeSteps.back();
+}
+}
+
+AsianOption::AsianOption(std::vector<double> timeSteps) : Option(extractExpiry(timeSteps)), timeSteps_(std::move(timeSteps)) {}
 
 /**
  * @brief Returns the time steps associated with the Asian option.

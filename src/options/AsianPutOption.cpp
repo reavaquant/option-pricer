@@ -9,8 +9,8 @@
  * @param timeSteps the time steps of the option.
  * @param strike the strike price of the option.
  */
-AsianPutOption::AsianPutOption(double expiry, std::vector<double> timeSteps, double strike)
-    : AsianOption(expiry, std::move(timeSteps)), strike_(strike) {}
+AsianPutOption::AsianPutOption(std::vector<double> timeSteps, double strike)
+    : AsianOption(std::move(timeSteps)), strike_(strike) {}
 
 /**
  * Returns the payoff of an Asian put option given the spot price.

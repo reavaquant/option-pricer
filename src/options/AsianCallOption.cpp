@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <utility>
 
-AsianCallOption::AsianCallOption(double expiry, std::vector<double> timeSteps, double strike) : AsianOption(expiry, std::move(timeSteps)), strike_(strike) {}
+AsianCallOption::AsianCallOption(std::vector<double> timeSteps, double strike) : AsianOption(std::move(timeSteps)), strike_(strike) {}
 
 /**
  * @brief The payoff of an Asian call option.

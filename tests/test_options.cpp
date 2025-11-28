@@ -20,8 +20,8 @@ int main() {
     AmericanCallOption american_call(1.0, 100.0);
     AmericanPutOption american_put(1.0, 100.0);
     const std::vector<double> asian_time_steps = {0.25, 0.5, 0.75, 1.0};
-    AsianCallOption asian_call(1.0, asian_time_steps, 100.0);
-    AsianPutOption asian_put(1.0, asian_time_steps, 100.0);
+    AsianCallOption asian_call(asian_time_steps, 100.0);
+    AsianPutOption asian_put(asian_time_steps, 100.0);
 
     assert(call.getOptionType() == OptionType::Call);
     assert(put.getOptionType() == OptionType::Put);
