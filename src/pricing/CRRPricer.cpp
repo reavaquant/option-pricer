@@ -3,21 +3,16 @@
 #include <cassert>
 #include "CRRPricer.hpp"
 
-CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R)
-    : option_(option), depth_(depth), S0_(S0), U_(U), D_(D), R_(R) {
 /**
- * @brief Construct a CRRPricer instance.
- * @details This pricer uses the Carr, Madan and Chang (CRR) algorithm to estimate the price of an option.
- * It is constructed with an option, an initial price, the up factor, the down factor, and the risk-free rate.
- * The option must not be null, and the time steps of the option will be cached for future use.
- * If the option is an AsianOption, then the time steps of the AsianOption will be used.
- * Otherwise, the time steps will be initialized with the expiry time of the option.
- * @param option The option to be priced.
- * @param depth The depth of the binary tree used to estimate the price of the option.
- * @param S0 The initial price of the underlying asset.
- * @param U The up factor (multiplicative factor or return).
- * @param D The down factor (multiplicative factor or return).
- * @param R The risk-free rate (multiplicative factor or return).
+ * @brief Constructor for CRRPricer.
+ * @details Construct a CRRPricer object for the given option and parameters.
+ * @param option the option to price
+ * @param depth the depth of the binomial tree
+ * @param S0 the initial spot price
+ * @param U the up factor (either a return or a multiplicative factor > 0)
+ * @param D the down factor (either a return or a multiplicative factor > 0)
+ * @param R the risk-free rate (either a return or a multiplicative factor > 0)
+ * @throw std::invalid_argument if option pointer is null, or if the option is an Asian option, or if the factors do not satisfy 0 < D < R < U
  */
 CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : option_(option), depth_(depth), S0_(S0), U_(U), D_(D), R_(R) {
     //arbitrage check
@@ -28,20 +23,25 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
         throw std::invalid_argument("CRRPricer: Asian options are not supported");
     }
 
-    // Accept either multiplicative factors (>0) or returns (typically small, can be negative)
-    auto to_factor = [](double x) {
-        if (x <= 0.0 || x < 0.5) {
-            const double factor = 1.0 + x;
-            if (factor <= 0.0) {
-                throw std::invalid_argument("CRRPricer: invalid factor after converting return");
-            }
-            return factor;
+    // Accept either multiplicative factors (>0) or returns (all three provided as returns)
+    auto as_factor = [](double x) {
+        const double factor = 1.0 + x;
+        if (factor <= 0.0) {
+            throw std::invalid_argument("CRRPricer: invalid factor after converting return");
         }
-        return x;
+        return factor;
     };
-    U_ = to_factor(U_);
-    D_ = to_factor(D_);
-    R_ = to_factor(R_);
+
+    const bool looks_like_return = (U_ < 1.0 && D_ < 1.0 && R_ < 1.0);
+    if (looks_like_return) {
+        U_ = as_factor(U_);
+        D_ = as_factor(D_);
+        R_ = as_factor(R_);
+    } else {
+        if (U_ <= 0.0 || D_ <= 0.0 || R_ <= 0.0) {
+            throw std::invalid_argument("CRRPricer: multiplicative factors must be positive");
+        }
+    }
 
     if (!(D_ < R_ && R_ < U_)) {
         throw std::invalid_argument("CRRPricer: arbitrage detected (need D < R < U)");
@@ -52,6 +52,19 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
     exerciseTree_.setDepth(depth_);
 }
 
+/**
+ * @brief Construct a CRRPricer instance using the risk-free rate and volatility.
+ * @details This constructor uses the risk-free rate and volatility to compute the up and down factors for the binomial tree.
+ * It first checks that the option pointer is not null, and that the depth is positive.
+ * It then computes the up and down factors using the risk-free rate and volatility.
+ * Finally, it checks for arbitrage and sets the depth of the binomial trees.
+ * @throw std::invalid_argument if the option pointer is null, or if the depth is not positive, or if the factors do not satisfy 0 < D < R < U.
+ * @param option the option to be priced
+ * @param depth the depth of the binomial tree
+ * @param S0 the initial spot price
+ * @param r the risk-free rate (either a return or a multiplicative factor > 0)
+ * @param volatility the volatility of the underlying asset (either a return or a multiplicative factor > 0)
+ */
 CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double volatility)
     : option_(option), depth_(depth), S0_(S0) {
     if (!option_) {
@@ -157,20 +170,20 @@ long double CRRPricer::binom_coeff(int N, int k) {
   return c;
 }
 
+/**
+ * @brief Calculate the price of the option using the binomial model.
+ * @details This function calculates the price of the option using the binomial model.
+ * If closed_form is true, it will use the closed form formula to calculate the price.
+ * If closed_form is false, it will use the binomial model to calculate the price.
+ * Note that the closed form formula is only supported for European options.
+ * @param closed_form Whether to use the closed form formula.
+ * @return The price of the option.
+ */
 double CRRPricer::operator()(bool closed_form) {
     if (option_->isAmericanOption() && closed_form) {
         throw std::logic_error("CRRPricer: closed form formula only supported for European options");
     }
-/**
- * @brief Return the price of the option using either the CRR binomial tree method or closed form.
- * 
- * @details This function returns the price of the option using either the CRR binomial tree method (if closed_form is false) or using the closed form (if closed_form is true).
- * If the CRR binomial tree method is used, it first calls the compute() function to compute the prices at each node of the tree, then returns the price at the root node.
- * If the closed form is used, it computes the price of the option directly without using the binary tree.
- * @param closed_form A boolean indicating whether to use the CRR binomial tree method (false) or the closed form (true).
- * @return The price of the option.
- */
-double CRRPricer::operator()(bool closed_form) {
+
     if (!closed_form) {
         if (!computed_) compute();
         return optionTree_.getNode(0, 0);

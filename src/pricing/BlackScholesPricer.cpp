@@ -1,6 +1,7 @@
 #include "BlackScholesPricer.hpp"
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 
 namespace {
     constexpr double kMinMaturity = 1e-9; 
@@ -17,9 +18,19 @@ namespace {
     }
 }
 
-BlackScholesPricer::BlackScholesPricer(EuropeanVanillaOption* option, double asset_price, double interest_rate, double volatility) : option_(option), strike_(option ? option->getStrike() : 0.0), asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(false) {}
+BlackScholesPricer::BlackScholesPricer(EuropeanVanillaOption* option, double asset_price, double interest_rate, double volatility)
+    : option_(option), strike_(option ? option->getStrike() : 0.0), asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(false) {
+    if (!option_) {
+        throw std::invalid_argument("BlackScholesPricer: option pointer must not be null");
+    }
+}
 
-BlackScholesPricer::BlackScholesPricer(EuropeanDigitalOption* option, double asset_price, double interest_rate, double volatility) : option_(option), strike_(option ? option->getStrike() : 0.0),asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(true) {}
+BlackScholesPricer::BlackScholesPricer(EuropeanDigitalOption* option, double asset_price, double interest_rate, double volatility)
+    : option_(option), strike_(option ? option->getStrike() : 0.0),asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(true) {
+    if (!option_) {
+        throw std::invalid_argument("BlackScholesPricer: option pointer must not be null");
+    }
+}
 
 /**
  * @brief Compute d1 and d2 values for Black-Scholes pricing formula.

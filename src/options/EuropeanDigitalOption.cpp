@@ -1,5 +1,5 @@
 #include "EuropeanDigitalOption.hpp"
-#include <iostream>
+#include <stdexcept>
 
 /**
  * Constructs a European digital option with the given expiry and strike price.
@@ -9,8 +9,8 @@
  * @throws std::invalid_argument if expiry or strike is negative.
  */
 EuropeanDigitalOption::EuropeanDigitalOption(double expiry, double strike) : Option(expiry), strike_(strike) {
-    if (expiry < 0.0 || strike < 0.0) {
-        std::cerr << "expiry and strike price must be nonnegative" << std::endl;
+    if (strike < 0.0) {
+        throw std::invalid_argument("EuropeanDigitalOption: strike must be nonnegative");
     }
 }
 

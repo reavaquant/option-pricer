@@ -195,9 +195,11 @@ int main() {
     AmericanPutOption american_put(1.0, 100.0);
     CRRPricer american_put_pricer(&american_put, crrDepth, americanPutS0, crrU, crrD, crrR);
     american_put_pricer.compute();
-    const double immediate_put_payoff = american_put.payoff(americanPutS0);
-    assert(std::fabs(american_put_pricer.get(0, 0) - immediate_put_payoff) < kEps);
-    assert(american_put_pricer.getExercise(0, 0));
+    // With these parameters the continuation value dominates the intrinsic,
+    // so the optimal policy is to hold.
+    const double expected_american_put = 12.891156462585029;
+    assert(std::fabs(american_put_pricer.get(0, 0) - expected_american_put) < kEps);
+    assert(!american_put_pricer.getExercise(0, 0));
 
     return 0;
 }

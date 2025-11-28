@@ -58,16 +58,11 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
         last_t = t;
     }
     maturity_ = time_steps_.back();
-
-    // Control variate for vanilla options (use closed form Black-Scholes as control mean)
-    if (!option_->isAsianOption()) {
-        if (auto* vanilla = dynamic_cast<EuropeanVanillaOption*>(option_)) {
-            // Closed-form value provides a zero-variance control for plain vanillas
-            BlackScholesPricer bs_control(vanilla, initial_price_, interest_rate_, volatility_);
-            vanilla_control_mean_ = bs_control.price();
-            has_vanilla_control_ = true;
-        }
+    const double expiry = option_->getExpiry();
+    if (std::abs(maturity_ - expiry) > 1e-9) {
+        throw std::invalid_argument("BlackScholesMCPricer: last time step must match option expiry");
     }
+
 }
 
 /**
@@ -141,22 +136,14 @@ void BlackScholesMCPricer::generate(int nb_paths) {
 
             const auto payoffs_pos = option_->payoffPath(path_pos);
             if (!payoffs_pos.empty() && generated < paths) {
-                double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_pos.back();
-                if (has_vanilla_control_) {
-                    // Control variate: subtract path payoff (centered) and add closed-form mean
-                    discounted = discounted - discounted + vanilla_control_mean_;
-                }
+                const double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_pos.back();
                 update_local(discounted);
                 ++generated;
             }
 
             const auto payoffs_neg = option_->payoffPath(path_neg);
             if (!payoffs_neg.empty() && generated < paths) {
-                double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_neg.back();
-                if (has_vanilla_control_) {
-                    // Control variate: subtract path payoff (centered) and add closed-form mean
-                    discounted = discounted - discounted + vanilla_control_mean_;
-                }
+                const double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_neg.back();
                 update_local(discounted);
                 ++generated;
             }

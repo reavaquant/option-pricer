@@ -1,7 +1,12 @@
 #include "Option.hpp"
+#include <stdexcept>
 #include <vector>
 
-Option::Option(double expiry) : expiry_(expiry) {}
+Option::Option(double expiry) : expiry_(expiry) {
+    if (expiry_ < 0.0) {
+        throw std::invalid_argument("Option: expiry must be nonnegative");
+    }
+}
 
 /**
  * @return the expiry time of the option.
