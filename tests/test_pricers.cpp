@@ -2,6 +2,8 @@
 #include <cmath>
 #include <stdexcept>
 
+#include "option-pricer/options/AmericanCallOption.hpp"
+#include "option-pricer/options/AmericanPutOption.hpp"
 #include "option-pricer/options/CallOption.hpp"
 #include "option-pricer/options/EuropeanDigitalCallOption.hpp"
 #include "option-pricer/options/EuropeanDigitalPutOption.hpp"
@@ -125,12 +127,25 @@ int main() {
     assert(std::fabs(crr_call_pricer(true) - expected_crr_call) < kEps);
     crr_call_pricer.compute();
     assert(std::fabs(crr_call_pricer.get(0, 0) - expected_crr_call) < kEps);
+    assert(!crr_call_pricer.getExercise(0, 0));
 
     PutOption crr_put(1.0, 100.0);
     CRRPricer crr_put_pricer(&crr_put, crrDepth, crrS0, crrU, crrD, crrR);
     const double expected_crr_put = 7.507288629737602;
     assert(std::fabs(crr_put_pricer(false) - expected_crr_put) < kEps);
     assert(std::fabs(crr_put_pricer(true) - expected_crr_put) < kEps);
+
+    // CRRPricer constructor using (r, sigma)
+    const double ctor_rate = 0.05;
+    const double ctor_sigma = 0.2;
+    CallOption crr_call_params(1.0, 100.0);
+    const double dt = crr_call_params.getExpiry() / static_cast<double>(crrDepth);
+    const double derivedU = std::exp(ctor_sigma * std::sqrt(dt));
+    const double derivedD = std::exp(-ctor_sigma * std::sqrt(dt));
+    const double derivedR = std::exp(ctor_rate * dt);
+    CRRPricer crr_from_params(&crr_call_params, crrDepth, crrS0, derivedU, derivedD, derivedR);
+    CRRPricer crr_from_rate(&crr_call_params, crrDepth, crrS0, ctor_rate, ctor_sigma);
+    assert(std::fabs(crr_from_params(false) - crr_from_rate(false)) < kEps);
 
     bool null_option_thrown = false;
     try {
@@ -159,6 +174,30 @@ int main() {
         negative_depth_thrown = true;
     }
     assert(negative_depth_thrown);
+
+    bool zero_depth_rate_ctor = false;
+    try {
+        CallOption dummy(1.0, 100.0);
+        CRRPricer invalid_rate_depth(&dummy, 0, crrS0, ctor_rate, ctor_sigma);
+        (void)invalid_rate_depth;
+    } catch (const std::invalid_argument&) {
+        zero_depth_rate_ctor = true;
+    }
+    assert(zero_depth_rate_ctor);
+
+    // American options through CRR
+    AmericanCallOption american_call(1.0, 100.0);
+    CRRPricer american_call_pricer(&american_call, crrDepth, crrS0, crrU, crrD, crrR);
+    american_call_pricer.compute();
+    assert(!american_call_pricer.getExercise(0, 0));
+
+    constexpr double americanPutS0 = 90.0;
+    AmericanPutOption american_put(1.0, 100.0);
+    CRRPricer american_put_pricer(&american_put, crrDepth, americanPutS0, crrU, crrD, crrR);
+    american_put_pricer.compute();
+    const double immediate_put_payoff = american_put.payoff(americanPutS0);
+    assert(std::fabs(american_put_pricer.get(0, 0) - immediate_put_payoff) < kEps);
+    assert(american_put_pricer.getExercise(0, 0));
 
     return 0;
 }
