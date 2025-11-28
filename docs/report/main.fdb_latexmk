@@ -1,9 +1,8 @@
 # Fdb version 4
-["pdflatex"] 1764347406.25905 "/Users/benjaminemily/Desktop/ESILV/S7/C++ for finance/option-pricer/docs/report/main.tex" "main.pdf" "main" 1764347407.21033 0
-  "/Users/benjaminemily/Desktop/ESILV/S7/C++ for finance/option-pricer/docs/report/main.tex" 1764347363.96222 6167 52aca1ce869d81638c5565c6dd80fb9a ""
+["pdflatex"] 1764357001.15017 "/Users/benjaminemily/Desktop/ESILV/S7/C++ for finance/option-pricer/docs/report/main.tex" "main.pdf" "main" 1764357002.18856 0
+  "/Users/benjaminemily/Desktop/ESILV/S7/C++ for finance/option-pricer/docs/report/main.tex" 1764357000.84486 6454 3beebba9afd45ba3eae805842d9e55d8 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1254269338 2375 baa924870cfb487815765f9094cf3728 ""
-  "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc" 1202520719 3486 c7eadf5dcc57b3b2d11736679f6636ba ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1202520719 2405 5dcf2c1b967ee25cc46c58cd52244aed ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc" 1202520719 2840 216e6e45ad352e2456e1149f28885bee ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc" 1202520719 2327 9d6df24f9c4f7368395224341a95523a ""
@@ -44,7 +43,6 @@
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/rm-lmr9.tfm" 1254269338 11884 c93929a6974dce79eabb778f219d7e18 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/ts1-lmr9.tfm" 1254269338 1576 219e49590ff1846c6e9d9797f3bd2972 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmbx9.pfb" 1255129361 126646 439622e6fd57f388c9979d39c4fce535 ""
-  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmex10.pfb" 1254269338 23055 2e5b42921de910eaa97b85df04ca4891 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmmi6.pfb" 1254269338 31113 04b711c9a4c7f8cb4ed784c6fc4cc1c5 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmmi9.pfb" 1254269338 30698 e53a423459271d6c5cdd91f7559396af ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmr6.pfb" 1255129361 123394 d390152bb30feeb496aaaa93299ee9ba ""
@@ -251,9 +249,9 @@
   "/usr/local/texlive/2024/texmf.cnf" 1710266656 577 e590dabc9e28c5b61546e15f63eebcdf ""
   "ilcss.cls" 1763745800.83313 13442 f2b2fc265bcf1e6f2e2ef38de2d024d4 ""
   "ilcssworkingpaper.sty" 1763745800.83343 1273 fe45af4eabc472c390260e2585a54c47 ""
-  "main.aux" 1764347407.10522 1956 41b37864d7a7fceabd9c0b414eab9ccf "pdflatex"
-  "main.out" 1764347407.10656 657 48598e55630006c58d18c5b8e002d830 "pdflatex"
-  "main.tex" 1764347363.96222 6167 52aca1ce869d81638c5565c6dd80fb9a ""
+  "main.aux" 1764357002.07252 1966 aca58baafa51288ba2d4d43aa34d3443 "pdflatex"
+  "main.out" 1764357002.07312 657 48598e55630006c58d18c5b8e002d830 "pdflatex"
+  "main.tex" 1764357000.84486 6454 3beebba9afd45ba3eae805842d9e55d8 ""
   (generated)
   "main.aux"
   "main.log"

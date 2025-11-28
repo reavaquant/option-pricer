@@ -1,5 +1,5 @@
 #include <algorithm>
-#include "AmericanPutOption.hpp"
+#include "AmericanPutOption.h"
 
 /**
  * Constructor for an American put option.

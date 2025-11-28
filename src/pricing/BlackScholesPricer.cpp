@@ -1,4 +1,4 @@
-#include "BlackScholesPricer.hpp"
+#include "BlackScholesPricer.h"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>

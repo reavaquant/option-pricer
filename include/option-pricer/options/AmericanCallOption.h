@@ -1,7 +1,7 @@
-#ifndef AMERICANCALLOPTION_HPP
-#define AMERICANCALLOPTION_HPP
+#ifndef AMERICANCALLOPTION_H
+#define AMERICANCALLOPTION_H
 
-#include "AmericanOption.hpp"
+#include "AmericanOption.h"
 
 class AmericanCallOption : public AmericanOption {
 public:

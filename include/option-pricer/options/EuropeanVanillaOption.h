@@ -1,14 +1,14 @@
-#ifndef EUROPEANDIGITALOPTION_HPP
-#define EUROPEANDIGITALOPTION_HPP
-#include "Option.hpp"
+#ifndef EUROPEANVANILLAOPTION_H
+#define EUROPEANVANILLAOPTION_H
+#include "Option.h"
 
 class BlackScholesPricer; // forward declaration
 
-class EuropeanDigitalOption : public Option {
+class EuropeanVanillaOption : public Option {
 protected:
     double strike_;
 public:
-    EuropeanDigitalOption(double expiry, double strike);
+    EuropeanVanillaOption(double expiry, double strike);
 
     OptionType getOptionType() const override = 0;
     double payoff(double asset_price) const override = 0;

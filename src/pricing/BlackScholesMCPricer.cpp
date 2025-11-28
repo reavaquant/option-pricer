@@ -4,10 +4,10 @@
 #include <stdexcept>
 #include <thread>
 #include <vector>
-#include "BlackScholesPricer.hpp"
-#include "BlackScholesMCPricer.hpp"
-#include "AsianOption.hpp"
-#include "MT.hpp"
+#include "BlackScholesPricer.h"
+#include "BlackScholesMCPricer.h"
+#include "AsianOption.h"
+#include "MT.h"
 
 
 

@@ -1,5 +1,5 @@
 #include <algorithm>
-#include "AmericanCallOption.hpp"
+#include "AmericanCallOption.h"
 
 /**
  * Constructor for an American call option.

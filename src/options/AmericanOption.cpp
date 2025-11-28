@@ -1,4 +1,4 @@
-#include "AmericanOption.hpp"
+#include "AmericanOption.h"
 
 AmericanOption::AmericanOption(double expiry, double strike) : Option(expiry), strike_(strike) {}
 

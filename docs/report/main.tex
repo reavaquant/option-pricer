@@ -1,13 +1,14 @@
 \PassOptionsToPackage{nopatch=eqnum}{microtype}
 \documentclass[9pt,twocolumn,twoside]{ilcss}
 \templatetype{ilcssworkingpaper} % Choose template 
+\additionalelement{} % désactive le float "Significance Statement" du template pour éviter les erreurs si non utilisé
 \title{C++ for Finance : A multiple type Option Pricer}	
 
 % Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
 \author{Benjamin Emily, Simon Carrière, Martin Verscheld, Hiba ElQoraichy}
 
 % Please give the surname of the lead author for the running footer
-\leadauthor{Lead author last name} 
+\leadauthor{Emily} 
 
 \begin{abstract}
 Please provide an abstract of no more than 250 words in a single paragraph. Abstracts should explain to the general reader the major contributions of the article. References in the abstract must be cited in full within the abstract itself and cited in the text. 
@@ -26,35 +27,28 @@ Please provide an abstract of no more than 250 words in a single paragraph. Abst
 
 \medskip
 
+Ce projet implémente un pricer multi-supports en C++ : modèles fermés Black--Scholes, Monte Carlo parallélisé (antithétiques, contrôle variate), et arbre binomial CRR pour gérer les options européennes, américaines et asiatiques via une interface commune d'options.
+
+\section*{Organisation BinaryTree (h/tpp/cpp)}
+
+\paragraph{Interface (.h).}
+Le fichier d'en-tête déclare le template \\
+\texttt{BinaryTree<T>} et inclut \texttt{BinaryTree.tpp} en fin de fichier pour que les définitions soient visibles dans chaque unité de traduction qui inclut l'interface.
+
+\paragraph{Implémentation template (.tpp).}
+Le \texttt{.tpp} contient les définitions des méthodes templées, séparées pour garder le \texttt{.h} concis tout en restant inclus par celui-ci (sinon on aurait des symboles non résolus au link).
+
+\paragraph{Instanciations explicites (.cpp).}
+Le \texttt{BinaryTree.cpp} inclut le couple \texttt{.hpp/.tpp} puis instancie explicitement les variantes réellement utilisées (\texttt{double}, \texttt{bool}, \texttt{int}) afin de centraliser la génération de code.
+
+\medskip
+
+Séparer interface et implémentation template évite \\
+ d'entasser toutes les définitions dans un unique \texttt{.h}, garde les headers lisibles, réduit les recompilations (les instanciations explicites sont centralisées dans un seul \texttt{.cpp}) et limite le risque de symboles dupliqués en link si un client oublie une \texttt{\#include}.
+
 
 
 \section*{Black Scholes Monte Carlo Pricer}
-\subsection*{Interface publique et état interne}
-
-\paragraph{Constructeur.}
-\texttt{BlackScholesMCPricer(...)}\\
-Il valide l'option (\texttt{option} non nulle), récupère une fois pour toutes les instants de monitoring (\texttt{time\_steps\_}) :  
-\begin{itemize}
-  \item si l'option est asiatique.
-  \item sinon, un unique pas à l'échéance (\texttt{expiry}).
-\end{itemize}
-Les temps doivent être non décroissants et le dernier doit coïncider avec l'échéance (sinon exception). 
-Pour chaque intervalle $\Delta t$, on pré-calculte deux quantités: 
-\[
-\texttt{drift\_dt\_[i]} = \left(r - \tfrac12 \sigma^2\right)\Delta t, 
-\]
-\[
-\texttt{vol\_sqrt\_dt\_[i]} = \sigma\sqrt{\Delta t},
-\]
-afin d'éviter de recalculer les mêmes produits à chaque trajectoire.
-
-\paragraph{Compteur de trajectoires.}
-L'attribut privé \texttt{nb\_paths\_} compte le \emph{nombre total} de trajectoires générées depuis la création de l'objet. 
-\texttt{getNbPaths()} donne un accès lecture à ce compteur.
-
-\paragraph{Estimateur en ligne.}
-On maintient \texttt{estimate\_} (moyenne), \texttt{M2\_} (somme des carrés centrés) et \texttt{nb\_paths\_}. 
-Ils sont mis à jour de façon incrémentale, \emph{sans stocker} les trajectoires dans l'objet (conforme à la consigne).
 
 \subsection{Génération et parallélisme : \texorpdfstring{\texttt{generate(nb\_paths)}}{generate(nb\_paths)}}
 

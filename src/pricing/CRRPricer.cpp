@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <cassert>
-#include "CRRPricer.hpp"
+#include "CRRPricer.h"
 
 /**
  * @brief Constructor for CRRPricer.

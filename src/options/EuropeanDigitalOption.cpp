@@ -1,4 +1,4 @@
-#include "EuropeanDigitalOption.hpp"
+#include "EuropeanDigitalOption.h"
 #include <stdexcept>
 
 /**

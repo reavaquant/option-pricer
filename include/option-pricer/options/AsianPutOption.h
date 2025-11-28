@@ -1,6 +1,6 @@
-#ifndef ASIANPUTOPTION_HPP
-#define ASIANPUTOPTION_HPP
-#include "AsianOption.hpp"
+#ifndef ASIANPUTOPTION_H
+#define ASIANPUTOPTION_H
+#include "AsianOption.h"
 #include <vector>
 
 class AsianPutOption: public AsianOption {

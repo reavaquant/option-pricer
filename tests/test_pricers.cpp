@@ -2,15 +2,15 @@
 #include <cmath>
 #include <stdexcept>
 
-#include "option-pricer/options/AmericanCallOption.hpp"
-#include "option-pricer/options/AmericanPutOption.hpp"
-#include "option-pricer/options/CallOption.hpp"
-#include "option-pricer/options/EuropeanDigitalCallOption.hpp"
-#include "option-pricer/options/EuropeanDigitalPutOption.hpp"
-#include "option-pricer/options/PutOption.hpp"
-#include "option-pricer/pricing/BlackScholesPricer.hpp"
-#include "option-pricer/pricing/BlackScholesMCPricer.hpp"
-#include "option-pricer/pricing/CRRPricer.hpp"
+#include "option-pricer/options/AmericanCallOption.h"
+#include "option-pricer/options/AmericanPutOption.h"
+#include "option-pricer/options/CallOption.h"
+#include "option-pricer/options/EuropeanDigitalCallOption.h"
+#include "option-pricer/options/EuropeanDigitalPutOption.h"
+#include "option-pricer/options/PutOption.h"
+#include "option-pricer/pricing/BlackScholesPricer.h"
+#include "option-pricer/pricing/BlackScholesMCPricer.h"
+#include "option-pricer/pricing/CRRPricer.h"
 
 namespace {
 constexpr double kEps = 1e-6;

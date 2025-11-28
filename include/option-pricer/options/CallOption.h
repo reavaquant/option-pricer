@@ -1,7 +1,7 @@
-#ifndef CALLOPTION_HPP
-#define CALLOPTION_HPP
+#ifndef CALLOPTION_H
+#define CALLOPTION_H
 
-#include "EuropeanVanillaOption.hpp"
+#include "EuropeanVanillaOption.h"
 
 class CallOption : public EuropeanVanillaOption {
 public:

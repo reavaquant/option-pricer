@@ -1,7 +1,7 @@
-#ifndef PUTOPTION_HPP
-#define PUTOPTION_HPP
+#ifndef PUTOPTION_H
+#define PUTOPTION_H
 
-#include "EuropeanVanillaOption.hpp"
+#include "EuropeanVanillaOption.h"
 
 class PutOption : public EuropeanVanillaOption {
 public:

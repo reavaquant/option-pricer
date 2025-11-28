@@ -1,5 +1,5 @@
-#ifndef OPTION_HPP
-#define OPTION_HPP
+#ifndef OPTION_H
+#define OPTION_H
 #include <vector>
 
 enum class OptionType {

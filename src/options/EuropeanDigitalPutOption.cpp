@@ -1,4 +1,4 @@
-#include "EuropeanDigitalPutOption.hpp"
+#include "EuropeanDigitalPutOption.h"
 
 /**
  * Constructs a European digital put option with the given expiry and strike price.

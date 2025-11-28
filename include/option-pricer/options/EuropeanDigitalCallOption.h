@@ -1,7 +1,7 @@
-#ifndef EUROPEANDIGITALCALLOPTION_HPP
-#define EUROPEANDIGITALCALLOPTION_HPP
+#ifndef EUROPEANDIGITALCALLOPTION_H
+#define EUROPEANDIGITALCALLOPTION_H
 
-#include "EuropeanDigitalOption.hpp"
+#include "EuropeanDigitalOption.h"
 
 class EuropeanDigitalCallOption : public EuropeanDigitalOption {
 public:

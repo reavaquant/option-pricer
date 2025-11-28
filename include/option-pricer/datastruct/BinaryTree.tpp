@@ -1,4 +1,4 @@
-#include "BinaryTree.hpp"
+#include "BinaryTree.h"
 #pragma once
 #include <algorithm>
 #include <iomanip>

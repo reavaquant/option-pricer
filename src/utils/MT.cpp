@@ -1,4 +1,4 @@
-#include "MT.hpp"
+#include "MT.h"
 
 std::mt19937& MT::generator() {
     // thread_local avoids races when MT is used from multiple threads

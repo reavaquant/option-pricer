@@ -1,7 +1,7 @@
-#ifndef EUROPEANDIGITALPUTOPTION_HPP
-#define EUROPEANDIGITALPUTOPTION_HPP
+#ifndef EUROPEANDIGITALPUTOPTION_H
+#define EUROPEANDIGITALPUTOPTION_H
 
-#include "EuropeanDigitalOption.hpp"
+#include "EuropeanDigitalOption.h"
 
 class EuropeanDigitalPutOption : public EuropeanDigitalOption {
 public:

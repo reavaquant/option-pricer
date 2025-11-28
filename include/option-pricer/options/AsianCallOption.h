@@ -1,6 +1,6 @@
-#ifndef ASIANCALLOPTION_HPP
-#define ASIANCALLOPTION_HPP
-#include "AsianOption.hpp"
+#ifndef ASIANCALLOPTION_H
+#define ASIANCALLOPTION_H
+#include "AsianOption.h"
 #include <vector>
 
 class AsianCallOption: public AsianOption {

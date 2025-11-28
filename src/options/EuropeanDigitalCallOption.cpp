@@ -1,4 +1,4 @@
-#include "EuropeanDigitalCallOption.hpp"
+#include "EuropeanDigitalCallOption.h"
 
 /**
  * \brief European Digital Call Option

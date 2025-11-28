@@ -1,5 +1,5 @@
-#ifndef MT_HPP
-#define MT_HPP
+#ifndef MT_H
+#define MT_H
 
 #include <random>
 

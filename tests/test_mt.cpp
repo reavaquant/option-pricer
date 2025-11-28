@@ -1,7 +1,7 @@
 #include <cassert>
 #include <cmath>
 
-#include "option-pricer/utils/MT.hpp"
+#include "option-pricer/utils/MT.h"
 
 int main() {
     const int unif_samples = 1000;

@@ -1,7 +1,7 @@
-#ifndef AMERICANOPTION_HPP
-#define AMERICANOPTION_HPP
+#ifndef AMERICANOPTION_H
+#define AMERICANOPTION_H
 
-#include "Option.hpp"
+#include "Option.h"
 
 class AmericanOption : public Option {
 protected:

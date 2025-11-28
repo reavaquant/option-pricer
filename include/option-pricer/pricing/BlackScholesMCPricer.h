@@ -1,9 +1,9 @@
-#ifndef BLACKSCHOLESMCPRICER_HPP
-#define BLACKSCHOLESMCPRICER_HPP
+#ifndef BLACKSCHOLESMCPRICER_H
+#define BLACKSCHOLESMCPRICER_H
 
 #include <vector>
-#include "Option.hpp"
-#include "EuropeanVanillaOption.hpp"
+#include "Option.h"
+#include "EuropeanVanillaOption.h"
 
 class BlackScholesMCPricer {
 public:

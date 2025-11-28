@@ -20,7 +20,6 @@ add_library(option_pricer_lib
     src/options/AsianOption.cpp
     src/options/AsianCallOption.cpp
     src/options/AsianPutOption.cpp
-    # autre cpp apres
 )
 target_include_directories(option_pricer_lib PUBLIC
     include

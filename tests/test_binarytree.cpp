@@ -2,7 +2,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "option-pricer/datastruct/BinaryTree.hpp"
+#include "option-pricer/datastruct/BinaryTree.h"
 
 int main() {
     BinaryTree<double> tree;

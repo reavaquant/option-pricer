@@ -1,7 +1,7 @@
-#ifndef AMERICANPUTOPTION_HPP
-#define AMERICANPUTOPTION_HPP
+#ifndef AMERICANPUTOPTION_H
+#define AMERICANPUTOPTION_H
 
-#include "AmericanOption.hpp"
+#include "AmericanOption.h"
 
 class AmericanPutOption : public AmericanOption {
 public:

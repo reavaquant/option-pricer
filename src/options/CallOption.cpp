@@ -1,4 +1,4 @@
-#include "CallOption.hpp"
+#include "CallOption.h"
 
 CallOption::CallOption(double expiry, double strike) : EuropeanVanillaOption(expiry, strike) {}
 

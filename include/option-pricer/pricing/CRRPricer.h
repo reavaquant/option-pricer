@@ -1,7 +1,7 @@
-#ifndef CRRPRICER_HPP
-#define CRRPRICER_HPP
-#include "Option.hpp"
-#include "BinaryTree.hpp" 
+#ifndef CRRPRICER_H
+#define CRRPRICER_H
+#include "Option.h"
+#include "BinaryTree.h" 
 
 class CRRPricer{
 public:

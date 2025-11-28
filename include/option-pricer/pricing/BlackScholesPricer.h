@@ -1,8 +1,8 @@
-#ifndef BLACKSCHOLESPRICER_HPP
-#define BLACKSCHOLESPRICER_HPP
+#ifndef BLACKSCHOLESPRICER_H
+#define BLACKSCHOLESPRICER_H
 
-#include "EuropeanDigitalOption.hpp"
-#include "EuropeanVanillaOption.hpp"
+#include "EuropeanDigitalOption.h"
+#include "EuropeanVanillaOption.h"
 
 class BlackScholesPricer {
 public:
