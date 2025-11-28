@@ -3,6 +3,20 @@
 #include <cassert>
 #include "CRRPricer.hpp"
 
+/**
+ * @brief Construct a CRRPricer instance.
+ * @details This pricer uses the Carr, Madan and Chang (CRR) algorithm to estimate the price of an option.
+ * It is constructed with an option, an initial price, the up factor, the down factor, and the risk-free rate.
+ * The option must not be null, and the time steps of the option will be cached for future use.
+ * If the option is an AsianOption, then the time steps of the AsianOption will be used.
+ * Otherwise, the time steps will be initialized with the expiry time of the option.
+ * @param option The option to be priced.
+ * @param depth The depth of the binary tree used to estimate the price of the option.
+ * @param S0 The initial price of the underlying asset.
+ * @param U The up factor (multiplicative factor or return).
+ * @param D The down factor (multiplicative factor or return).
+ * @param R The risk-free rate (multiplicative factor or return).
+ */
 CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : option_(option), depth_(depth), S0_(S0), U_(U), D_(D), R_(R) {
     //arbitrage check
     if (!option_) {
@@ -66,11 +80,26 @@ void CRRPricer::compute() {
     computed_ = true;
 }
 
+/**
+ * @brief Get the price of the option at a specific node in the binary tree.
+ * @details This function returns the price of the option at the node (n, i) in the binary tree.
+ * It requires that the compute() function has been called first.
+ * @param n The level of the binary tree.
+ * @param i The index of the node at level n.
+ * @return The price of the option at the node (n, i).
+ */
 double CRRPricer::get(int n, int i) {
     assert(computed_ && "CRR_EuroPricer::get requires compute() first.");
     return optionTree_.getNode(n, i);
 }
 
+/**
+ * @brief Calculate the binomial coefficient N choose k.
+ * @details This function calculates the binomial coefficient N choose k, i.e. the number of combinations of k items chosen from a set of N items.
+ * @param N The total number of items.
+ * @param k The number of items to choose.
+ * @return The binomial coefficient N choose k.
+ */
 long double CRRPricer::binom_coeff(int N, int k) {
   if (k < 0 || k > N) return 0.0L;
   int m = std::min(k, N - k);
@@ -81,6 +110,15 @@ long double CRRPricer::binom_coeff(int N, int k) {
   return c;
 }
 
+/**
+ * @brief Return the price of the option using either the CRR binomial tree method or closed form.
+ * 
+ * @details This function returns the price of the option using either the CRR binomial tree method (if closed_form is false) or using the closed form (if closed_form is true).
+ * If the CRR binomial tree method is used, it first calls the compute() function to compute the prices at each node of the tree, then returns the price at the root node.
+ * If the closed form is used, it computes the price of the option directly without using the binary tree.
+ * @param closed_form A boolean indicating whether to use the CRR binomial tree method (false) or the closed form (true).
+ * @return The price of the option.
+ */
 double CRRPricer::operator()(bool closed_form) {
     if (!closed_form) {
         if (!computed_) compute();
