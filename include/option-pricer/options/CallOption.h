@@ -1,13 +1,13 @@
-#ifndef CALLOPTION_HPP
-#define CALLOPTION_HPP
+#ifndef CALLOPTION_H
+#define CALLOPTION_H
 
-#include "EuropeanVanillaOption.hpp"
+#include "EuropeanVanillaOption.h"
 
 class CallOption : public EuropeanVanillaOption {
 public:
     CallOption(double expiry, double strike);
     OptionType getOptionType() const override;
-    double payoff(double underlying) const override;
+    double payoff(double asset_price) const override;
 };
 
 #endif

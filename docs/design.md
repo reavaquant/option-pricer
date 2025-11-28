@@ -62,7 +62,7 @@ EuropeanDigitalOption <|-- EuropeanDigitalPutOption
 
 class AsianOption {
   - vector<double> _timeSteps
-  + AsianOption(double expiry, vector<double> timeSteps)
+  + AsianOption(vector<double> timeSteps)
   + vector<double> getTimeSteps()
   + double payoffPath(vector<double> path)
   + bool isAsianOption()
@@ -71,12 +71,12 @@ Option <|-- AsianOption
 
 class AsianCallOption {
   - double _strike
-  + AsianCallOption(double expiry, vector<double> timeSteps, double strike)
+  + AsianCallOption(vector<double> timeSteps, double strike)
   + double payoff(double z)
 }
 class AsianPutOption {
   - double _strike
-  + AsianPutOption(double expiry, vector<double> timeSteps, double strike)
+  + AsianPutOption(vector<double> timeSteps, double strike)
   + double payoff(double z)
 }
 AsianOption <|-- AsianCallOption
