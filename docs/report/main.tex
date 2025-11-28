@@ -88,6 +88,11 @@ Dans le code fourni, chaque échantillon est ensuite remplacé par cette valeur:
 Cela sert à \emph{valider} la chaîne MC et à comparer aux produits path-dépendants. 
 (\emph{Remarque}: ce contrôle n'était pas imposé par la consigne, c'est une amélioration.)
 
+\paragraph{Effet sur la convergence.}
+Avec un contrôle parfait, l'estimateur Monte Carlo est centré \emph{exactement} sur la valeur fermée et sa variance empirique $s^2$ tombe à zéro (ou quasi zéro numériquement). 
+La largeur d'un IC à $95\%$ vaut $2\times 1{,}96\times s/\sqrt{n}$: ici $s\approx 0$, donc l'IC s'écrase et le prix retourné coïncide avec Black--Scholes dès quelques trajectoires. 
+Ce mécanisme assure le \emph{bon prix} pour les vanilles européennes; pour les produits sans formule fermée (asiatiques, américains), on revient à la convergence classique en $1/\sqrt{n}$.
+
 \subsection{Statistiques en ligne et agrégation}
 
 \paragraph{Structure locale.}

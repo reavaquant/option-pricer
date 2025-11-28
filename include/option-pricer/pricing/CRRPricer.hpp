@@ -8,7 +8,7 @@ public:
     CRRPricer(Option* option, int depth, double S0, double U, double D, double R);
     void compute();
     double get(int n, int i);
-    double operator()(bool closed_form);
+    double operator()(bool closed_form = false);
     bool getExercise(int n, int i);
 
 private:

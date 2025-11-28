@@ -11,10 +11,26 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
     if (option_->isAsianOption()) {
         throw std::invalid_argument("CRRPricer: Asian options are not supported");
     }
-    if (!(D < R && R < U)) {
+
+    // Accept either multiplicative factors (>0) or returns (typically small, can be negative)
+    auto to_factor = [](double x) {
+        if (x <= 0.0 || x < 0.5) {
+            const double factor = 1.0 + x;
+            if (factor <= 0.0) {
+                throw std::invalid_argument("CRRPricer: invalid factor after converting return");
+            }
+            return factor;
+        }
+        return x;
+    };
+    U_ = to_factor(U_);
+    D_ = to_factor(D_);
+    R_ = to_factor(R_);
+
+    if (!(D_ < R_ && R_ < U_)) {
         throw std::invalid_argument("CRRPricer: arbitrage detected (need D < R < U)");
     }
-    if (U <= D) throw std::invalid_argument("CRRPricer: up factor must exceed down factor");
+    if (U_ <= D_) throw std::invalid_argument("CRRPricer: up factor must exceed down factor");
 
     optionTree_.setDepth(depth_);
 }
@@ -65,7 +81,7 @@ long double CRRPricer::binom_coeff(int N, int k) {
   return c;
 }
 
-double CRRPricer::operator()(bool closed_form = false) {
+double CRRPricer::operator()(bool closed_form) {
     if (!closed_form) {
         if (!computed_) compute();
         return optionTree_.getNode(0, 0);
@@ -86,5 +102,3 @@ double CRRPricer::operator()(bool closed_form = false) {
     }
     return sum / std::pow(R, depth_);
 }
-
-//<todo> add test
