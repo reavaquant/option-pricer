@@ -3,6 +3,9 @@ project(option_pricer LANGUAGES CXX)
 
 add_library(option_pricer_lib
     src/options/Option.cpp
+    src/options/AmericanOption.cpp
+    src/options/AmericanCallOption.cpp
+    src/options/AmericanPutOption.cpp
     src/options/EuropeanVanillaOption.cpp
     src/options/EuropeanDigitalOption.cpp
     src/options/EuropeanDigitalCallOption.cpp
