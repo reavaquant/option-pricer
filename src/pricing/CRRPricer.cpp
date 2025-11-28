@@ -3,7 +3,8 @@
 #include <cassert>
 #include "CRRPricer.hpp"
 
-CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : option_(option), depth_(depth), S0_(S0), U_(U), D_(D), R_(R) {
+CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R)
+    : option_(option), depth_(depth), S0_(S0), U_(U), D_(D), R_(R) {
     //arbitrage check
     if (!option_) {
         throw std::invalid_argument("CRRPricer: option pointer must not be null");
@@ -14,6 +15,32 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
     if (U <= D) throw std::invalid_argument("CRRPricer: up factor must exceed down factor");
 
     optionTree_.setDepth(depth_);
+    exerciseTree_.setDepth(depth_);
+}
+
+CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double volatility)
+    : option_(option), depth_(depth), S0_(S0) {
+    if (!option_) {
+        throw std::invalid_argument("CRRPricer: option pointer must not be null");
+    }
+    if (depth_ <= 0) {
+        throw std::invalid_argument("CRRPricer: depth must be positive when using r/sigma constructor");
+    }
+
+    const double expiry = option_->getExpiry();
+    const double dt = expiry / static_cast<double>(depth_);
+    const double sigma_step = volatility * std::sqrt(dt);
+    U_ = std::exp(sigma_step);
+    D_ = std::exp(-sigma_step);
+    R_ = std::exp(r * dt);
+
+    if (!(D_ < R_ && R_ < U_)) {
+        throw std::invalid_argument("CRRPricer: arbitrage detected (need D < R < U)");
+    }
+    if (U_ <= D_) throw std::invalid_argument("CRRPricer: up factor must exceed down factor");
+
+    optionTree_.setDepth(depth_);
+    exerciseTree_.setDepth(depth_);
 }
 
 /**
@@ -25,13 +52,16 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
 void CRRPricer::compute() {
     const double R = R_;
     double q = (R - D_) / (U_ - D_);
+    const bool isAmerican = option_->isAmericanOption();
 
     //set spot price at the depth
     double s = S0_;
     for (int k = 0; k < depth_; ++k) s *= D_;
     const double ratio = U_ / D_;
     for (int i = 0; i <= depth_; ++i) {
-        optionTree_.setNode(depth_, i, option_->payoff(s));
+        const double payoff = option_->payoff(s);
+        optionTree_.setNode(depth_, i, payoff);
+        exerciseTree_.setNode(depth_, i, isAmerican && payoff > 0.0);
         s *= ratio;
     }
 
@@ -41,7 +71,18 @@ void CRRPricer::compute() {
             const double up = optionTree_.getNode(n + 1, i + 1);
             const double down = optionTree_.getNode(n + 1, i);
             const double cont = (q * up + (1.0 - q) * down) / R;
-            optionTree_.setNode(n, i, cont);
+            double nodeValue = cont;
+            bool exercise = false;
+            if (isAmerican) {
+                const double spot = S0_ * std::pow(U_, i) * std::pow(D_, n - i);
+                const double intrinsic = option_->payoff(spot);
+                if (intrinsic >= cont) {
+                    nodeValue = intrinsic;
+                    exercise = true;
+                }
+            }
+            optionTree_.setNode(n, i, nodeValue);
+            exerciseTree_.setNode(n, i, exercise);
         }
     }
     computed_ = true;
@@ -50,6 +91,11 @@ void CRRPricer::compute() {
 double CRRPricer::get(int n, int i) {
     assert(computed_ && "CRR_EuroPricer::get requires compute() first.");
     return optionTree_.getNode(n, i);
+}
+
+bool CRRPricer::getExercise(int n, int i) {
+    assert(computed_ && "CRRPricer::getExercise requires compute() first.");
+    return exerciseTree_.getNode(n, i);
 }
 
 long double CRRPricer::binom_coeff(int N, int k) {
@@ -62,7 +108,10 @@ long double CRRPricer::binom_coeff(int N, int k) {
   return c;
 }
 
-double CRRPricer::operator()(bool closed_form = false) {
+double CRRPricer::operator()(bool closed_form) {
+    if (option_->isAmericanOption() && closed_form) {
+        throw std::logic_error("CRRPricer: closed form formula only supported for European options");
+    }
     if (!closed_form) {
         if (!computed_) compute();
         return optionTree_.getNode(0, 0);
