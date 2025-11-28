@@ -9,6 +9,7 @@
 #include "option-pricer/options/EuropeanDigitalPutOption.hpp"
 #include "option-pricer/options/PutOption.hpp"
 #include "option-pricer/pricing/BlackScholesPricer.hpp"
+#include "option-pricer/pricing/BlackScholesMCPricer.hpp"
 #include "option-pricer/pricing/CRRPricer.hpp"
 
 namespace {
@@ -53,6 +54,45 @@ int main() {
     const double expected_digital_delta = 0.018762017345846895;
     assert(std::fabs(digital_call_pricer.delta() - expected_digital_delta) < kEps);
     assert(std::fabs(digital_put_pricer.delta() + expected_digital_delta) < kEps);
+
+    // ----BlackScholesMCPricer tests----
+    constexpr int mc_paths = 200000;
+    BlackScholesMCPricer mc_call_pricer(&call, spot, rate, vol);
+    mc_call_pricer.generate(mc_paths);
+    const double mc_call_price = mc_call_pricer();
+    assert(std::fabs(mc_call_price - expected_call) < 0.75); // Monte Carlo tolerance
+    assert(mc_call_pricer.getNbPaths() == mc_paths);
+
+    BlackScholesMCPricer mc_put_pricer(&put, spot, rate, vol);
+    mc_put_pricer.generate(mc_paths);
+    const double mc_put_price = mc_put_pricer.price();
+    assert(std::fabs(mc_put_price - expected_put) < 0.75); // Monte Carlo tolerance
+    assert(mc_put_pricer.getNbPaths() == mc_paths);
+
+    bool mc_price_without_paths_thrown = false;
+    try {
+        BlackScholesMCPricer mc_call_no_paths(&call, spot, rate, vol);
+        (void)mc_call_no_paths.price();
+    } catch (const std::logic_error&) {
+        mc_price_without_paths_thrown = true;
+    }
+    assert(mc_price_without_paths_thrown);
+
+    bool mc_ci_without_paths_thrown = false;
+    try {
+        BlackScholesMCPricer mc_ci_no_paths(&call, spot, rate, vol);
+        (void)mc_ci_no_paths.confidenceInterval();
+    } catch (const std::logic_error&) {
+        mc_ci_without_paths_thrown = true;
+    }
+    assert(mc_ci_without_paths_thrown);
+
+    BlackScholesMCPricer mc_ci_pricer(&call, spot, rate, vol);
+    mc_ci_pricer.generate(mc_paths);
+    const auto ci = mc_ci_pricer.confidenceInterval();
+    assert(ci.size() == 2);
+    assert(ci[0] < ci[1]);
+    assert(ci[0] <= mc_ci_pricer.price() && mc_ci_pricer.price() <= ci[1]);
 
     // limit case
     CallOption call_expired(0.0, 100.0);

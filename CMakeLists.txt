@@ -13,8 +13,13 @@ add_library(option_pricer_lib
     src/options/CallOption.cpp
     src/options/PutOption.cpp
     src/pricing/BlackScholesPricer.cpp
+    src/pricing/BlackScholesMCPricer.cpp
     src/pricing/CRRPricer.cpp
     src/datastruct/BinaryTree.cpp
+    src/utils/MT.cpp
+    src/options/AsianOption.cpp
+    src/options/AsianCallOption.cpp
+    src/options/AsianPutOption.cpp
     # autre cpp apres
 )
 target_include_directories(option_pricer_lib PUBLIC
@@ -22,6 +27,7 @@ target_include_directories(option_pricer_lib PUBLIC
     include/option-pricer/options
     include/option-pricer/pricing
     include/option-pricer/datastruct
+    include/option-pricer/utils
 )
 
 add_executable(option_pricer src/main.cpp)
