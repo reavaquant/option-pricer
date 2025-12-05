@@ -45,12 +45,14 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
     drift_dt_.resize(time_steps_.size());
     vol_sqrt_dt_.resize(time_steps_.size());
     const double drift = interest_rate_ - 0.5 * volatility_ * volatility_;
+    double t = 0;
+    double dt = 0;
     for (std::size_t i = 0; i < time_steps_.size(); ++i) {
-        const double t = time_steps_[i];
+        t = time_steps_[i];
         if (t < last_t) {
             throw std::invalid_argument("BlackScholesMCPricer: time steps must be non-decreasing");
         }
-        const double dt = t - last_t;
+        dt = t - last_t;
         drift_dt_[i] = drift * dt; // precompute drift * dt
         vol_sqrt_dt_[i] = volatility_ * std::sqrt(dt); // precompute vol * sqrt(dt)
         last_t = t;
