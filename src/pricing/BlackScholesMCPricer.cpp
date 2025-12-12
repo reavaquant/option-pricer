@@ -28,13 +28,12 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
         throw std::invalid_argument("BlackScholesMCPricer: option pointer must not be null");
     }
 
-    // Cache time steps once (avoid per-path dynamic_cast/validation)
-    if (option_->isAsianOption()) {
-        if (auto* asian = dynamic_cast<AsianOption*>(option_)) {
-            time_steps_ = asian->getTimeSteps();
-        } else {
-            throw std::invalid_argument("BlackScholesMCPricer: option flagged as Asian but cast failed");
-        }
+    // Cache time steps once
+    auto* asian = dynamic_cast<AsianOption*>(option_);
+    if (asian) {
+        time_steps_ = asian->getTimeSteps();
+    } else if (option_->isAsianOption()) {
+        throw std::invalid_argument("BlackScholesMCPricer: option flagged as Asian but cast failed");
     }
     if (time_steps_.empty()) {
         time_steps_.push_back(option_->getExpiry());
@@ -49,12 +48,9 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
     double dt = 0;
     for (std::size_t i = 0; i < time_steps_.size(); ++i) {
         t = time_steps_[i];
-        if (t < last_t) {
-            throw std::invalid_argument("BlackScholesMCPricer: time steps must be non-decreasing");
-        }
         dt = t - last_t;
-        drift_dt_[i] = drift * dt; // precompute drift * dt
-        vol_sqrt_dt_[i] = volatility_ * std::sqrt(dt); // precompute vol * sqrt(dt)
+        drift_dt_[i] = drift * dt;
+        vol_sqrt_dt_[i] = volatility_ * std::sqrt(dt);
         last_t = t;
     }
     maturity_ = time_steps_.back();
@@ -63,15 +59,12 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
         throw std::invalid_argument("BlackScholesMCPricer: last time step must match option expiry");
     }
 
-    // Optional contrôle variate pour vanilles européennes (réduit fortement la variance)
-    if (!option_->isAsianOption()) {
-        if (auto* vanilla = dynamic_cast<EuropeanVanillaOption*>(option_)) {
-            BlackScholesPricer bs_control(vanilla, initial_price_, interest_rate_, volatility_);
-            control_mean_ = bs_control.price();
-            has_control_variate_ = true;
-        }
+    // Control variate
+    if (auto* vanilla = dynamic_cast<EuropeanVanillaOption*>(option_)) {
+        BlackScholesPricer bs_control(vanilla, initial_price_, interest_rate_, volatility_);
+        control_mean_ = bs_control.price();
+        has_control_variate_ = true;
     }
-
 }
 
 /**
@@ -116,18 +109,25 @@ void BlackScholesMCPricer::generate(int nb_paths) {
         std::vector<double> path_neg(steps);
 
         int generated = 0;
+
         while (generated < paths) {
             double s_pos = initial_price_;
             double s_neg = initial_price_;
 
+            double step_drift = 0;
+            double step_vol = 0;
+            double z = 0;
+            double exp_pos = 0;
+            double exp_neg = 0;
+
             // Antithetic pairing halves variance by coupling z with -z
             for (std::size_t i = 0; i < steps; ++i) {
-                const double step_drift = drift_dt_[i];
-                const double step_vol = vol_sqrt_dt_[i];
+                step_drift = drift_dt_[i];
+                step_vol = vol_sqrt_dt_[i];
                 if (step_drift != 0.0 || step_vol != 0.0) { // skip exp() when dt == 0
-                    const double z = MT::rand_norm();
-                    const double exp_pos = std::exp(step_drift + step_vol * z);
-                    const double exp_neg = std::exp(step_drift - step_vol * z);
+                    z = MT::rand_norm();
+                    exp_pos = std::exp(step_drift + step_vol * z);
+                    exp_neg = std::exp(step_drift - step_vol * z);
                     s_pos *= exp_pos;
                     s_neg *= exp_neg;
                 }
@@ -147,7 +147,6 @@ void BlackScholesMCPricer::generate(int nb_paths) {
             if (!payoffs_pos.empty() && generated < paths) {
                 double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_pos.back();
                 if (has_control_variate_) {
-                    // Ici le payoff de contrôle est celui de la vanille (identique à l'option si vanille)
                     discounted = discounted - discounted + control_mean_;
                 }
                 update_local(discounted);
