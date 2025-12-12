@@ -4,10 +4,10 @@
 #include <stdexcept>
 
 namespace {
-    constexpr double kMinMaturity = 1e-9; 
-    constexpr double kMinVolatility = 1e-12;
-    constexpr double kMinPrice = 1e-12;
-    constexpr double kInvSqrtTwoPi = 0.39894228040143267794; // 1 / sqrt(2 * pi)
+    const double kMinMaturity = 1e-9; 
+    const double kMinVolatility = 1e-12;
+    const double kMinPrice = 1e-12;
+    const double kInvSqrtTwoPi = 0.39894228040143267794; // 1 / sqrt(2 * pi)
 
     double normalCdf(double x) {
         return 0.5 * std::erfc(-x / std::sqrt(2.0)); // standard normal CDF
