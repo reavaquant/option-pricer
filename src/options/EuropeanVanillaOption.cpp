@@ -9,7 +9,7 @@
  * @throws std::invalid_argument if expiry or strike is negative.
  */
 EuropeanVanillaOption::EuropeanVanillaOption(double expiry, double strike) : Option(expiry), strike_(strike) {
-    if (strike < 0.0) {
+    if (strike < 0) {
         throw std::invalid_argument("EuropeanVanillaOption: strike must be nonnegative");
     }
 }

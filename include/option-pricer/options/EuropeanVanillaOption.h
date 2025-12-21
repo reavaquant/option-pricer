@@ -2,7 +2,7 @@
 #define EUROPEANVANILLAOPTION_H
 #include "Option.h"
 
-class BlackScholesPricer; // forward declaration
+// class BlackScholesPricer; // forward declaration
 
 class EuropeanVanillaOption : public Option {
 protected:
