@@ -3,53 +3,20 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace {
-    const double kMinMaturity = 1e-9; 
-    const double kMinVolatility = 1e-12;
-    const double kMinPrice = 1e-12;
-    const double kInvSqrtTwoPi = 0.39894228040143267794; // 1 / sqrt(2 * pi)
+static double normalCdf(double x) {
+    return 0.5 * std::erfc(-x / std::sqrt(2.0));
+}
 
-    double normalCdf(double x) {
-        return 0.5 * std::erfc(-x / std::sqrt(2.0)); // standard normal CDF
-    }
-
-    double normalPdf(double x) {
-        return kInvSqrtTwoPi * std::exp(-0.5 * x * x);
+BlackScholesPricer::BlackScholesPricer(EuropeanVanillaOption* option, double asset_price, double interest_rate, double volatility) : option_(option), strike_(option ? option->getStrike() : 0), asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(false) {
+    if (asset_price_ <= 0.0 || volatility_ <= 0.0 || option_->getExpiry() <= 0.0) {
+        throw std::invalid_argument("BlackScholesPricer: invalid parameters");
     }
 }
 
-BlackScholesPricer::BlackScholesPricer(EuropeanVanillaOption* option, double asset_price, double interest_rate, double volatility)
-    : option_(option), strike_(option ? option->getStrike() : 0.0), asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(false) {
-    if (!option_) {
+BlackScholesPricer::BlackScholesPricer(EuropeanDigitalOption* option, double asset_price, double interest_rate, double volatility) : digital_option_(option), strike_(option ? option->getStrike() : 0),asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(true) {
+    if (!digital_option_) {
         throw std::invalid_argument("BlackScholesPricer: option pointer must not be null");
     }
-}
-
-BlackScholesPricer::BlackScholesPricer(EuropeanDigitalOption* option, double asset_price, double interest_rate, double volatility)
-    : option_(option), strike_(option ? option->getStrike() : 0.0),asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(true) {
-    if (!option_) {
-        throw std::invalid_argument("BlackScholesPricer: option pointer must not be null");
-    }
-}
-
-/**
- * @brief Compute d1 and d2 values for Black-Scholes pricing formula.
- * 
- * @details The Black-Scholes pricing formula requires two normal CDF values, d1 and d2.
- * These values are computed based on the asset price, strike, interest rate, volatility, and maturity time.
- * The computed values are then used to calculate the price of the option.
- * 
- * @return A struct containing the computed d1 and d2 values.
- */
-BlackScholesPricer::DValues BlackScholesPricer::computeDValues() const {
-    const double T = std::max(option_->getExpiry(), kMinMaturity); // avoid division by zero
-    const double volatility = std::max(volatility_, kMinVolatility);
-    const double denominator = volatility * std::sqrt(T);
-    const double safe_strike = std::max(strike_, kMinPrice);
-    const double safe_spot = std::max(asset_price_, kMinPrice);
-
-    const double d1 = (std::log(safe_spot / safe_strike) + (interest_rate_ + 0.5 * volatility * volatility) * T) / denominator;
-    return {d1, d1 - denominator};
 }
 
 /**
@@ -62,23 +29,15 @@ BlackScholesPricer::DValues BlackScholesPricer::computeDValues() const {
  * Otherwise, the price of the option is calculated using the Black-Scholes model.
  */
 double BlackScholesPricer::price() const {
-    const double T = option_->getExpiry();
-    if (T <= 0.0 || volatility_ < kMinVolatility) {
-        return option_->payoff(asset_price_); // payoff at maturity or no volatility
-    }
-
-    const DValues d = computeDValues();
-    if (!is_digital_) {
-        if (option_->getOptionType() == OptionType::Call) {
-            return asset_price_ * normalCdf(d.d1) - strike_ * std::exp(-interest_rate_ * T) * normalCdf(d.d2);
-        }
-        return strike_ * std::exp(-interest_rate_ * T) * normalCdf(-d.d2) - asset_price_ * normalCdf(-d.d1);
-    }
-    const double discount = std::exp(-interest_rate_ * T);
-    if (option_->getOptionType() == OptionType::Call) {
-        return discount * normalCdf(d.d2);
-    }
-    return discount * normalCdf(-d.d2);
+    double T = option_->getExpiry();
+    if (T <= 0.0) return option_->payoff(asset_price_);
+    double K = option_-> strike_; // friend access
+    double sigma_sqrt_T = volatility_ * std::sqrt(T);
+    double d1 = (std::log(asset_price_ / K) + (interest_rate_ + 0.5 * volatility_ * volatility_) * T) / sigma_sqrt_T;
+    double d2 = d1 - sigma_sqrt_T;
+    if (option_->getOptionType() == OptionType::Call)
+        return asset_price_ * normalCdf(d1) - K * std::exp(-interest_rate_ * T) * normalCdf(d2);
+    return K * std::exp(-interest_rate_ * T) * normalCdf(-d2) - asset_price_ * normalCdf(-d1);
 }
 
 /**
@@ -92,25 +51,13 @@ double BlackScholesPricer::price() const {
  * Otherwise, the delta is computed as the partial derivative of the option price with respect to the underlying asset price.
  */
 double BlackScholesPricer::delta() const {
-    const double T = option_->getExpiry();
-    if (T <= 0.0 || volatility_ < kMinVolatility) {
-        if (is_digital_) {
-            return 0.0;
-        }
-        if (option_->getOptionType() == OptionType::Call) {
-            return asset_price_ > strike_ ? 1.0 : 0.0;
-        }
-        return asset_price_ < strike_ ? -1.0 : 0.0;
+    double T = option_->getExpiry();
+    if (T <= 0.0) {
+        return (option_->getOptionType() == OptionType::Call) ? (asset_price_ > option_-> strike_ ? 1.0 : 0.0) : (asset_price_ < option_-> strike_ ? -1.0 : 0.0);
     }
-    const DValues d = computeDValues();
-    if (!is_digital_) {
-        return option_->getOptionType() == OptionType::Call ? normalCdf(d.d1) : normalCdf(d.d1) - 1.0;
-    }
-    const double volatility = std::max(volatility_, kMinVolatility);
-    const double denom = std::max(asset_price_, kMinPrice) * volatility * std::sqrt(T);
-    const double discount = std::exp(-interest_rate_ * T);
-    const double sensitivity = discount * normalPdf(d.d2) / denom;
-    return option_->getOptionType() == OptionType::Call ? sensitivity : -sensitivity;
+    double sigma_sqrt_T = volatility_ * std::sqrt(T);
+    double d1 = (std::log(asset_price_ / option_-> strike_) + (interest_rate_ + 0.5 * volatility_ * volatility_) * T) / sigma_sqrt_T;
+    return option_->getOptionType() == OptionType::Call ? normalCdf(d1) : normalCdf(d1) - 1.0;
 }
 
 /**

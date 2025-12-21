@@ -13,18 +13,13 @@ public:
     double operator()() const;
 
 private:
-    Option* option_;
+    EuropeanVanillaOption* option_;
+    EuropeanDigitalOption* digital_option_;
     double strike_;
     double asset_price_;
     double interest_rate_;
     double volatility_;
     bool is_digital_;
-
-    struct DValues { //utility struct for normal cdf values
-        double d1;
-        double d2;
-    };
-    DValues computeDValues() const;
 };
 
 

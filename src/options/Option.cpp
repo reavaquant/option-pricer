@@ -3,7 +3,7 @@
 #include <vector>
 
 Option::Option(double expiry) : expiry_(expiry) {
-    if (expiry_ < 0.0) {
+    if (expiry_ < 0) {
         throw std::invalid_argument("Option: expiry must be nonnegative");
     }
 }
