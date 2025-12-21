@@ -8,7 +8,7 @@ static double normalCdf(double x) {
 }
 
 BlackScholesPricer::BlackScholesPricer(EuropeanVanillaOption* option, double asset_price, double interest_rate, double volatility) : option_(option), strike_(option ? option->getStrike() : 0), asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(false) {
-    if (asset_price_ <= 0.0 || volatility_ <= 0.0 || option_->getExpiry() <= 0.0) {
+    if (asset_price_ <= 0.0 || volatility_ <= 0.0 || option_ == nullptr || strike_ <= 0.0) {
         throw std::invalid_argument("BlackScholesPricer: invalid parameters");
     }
 }
@@ -31,7 +31,7 @@ BlackScholesPricer::BlackScholesPricer(EuropeanDigitalOption* option, double ass
 double BlackScholesPricer::price() const {
     double T = option_->getExpiry();
     if (T <= 0.0) return option_->payoff(asset_price_);
-    double K = option_-> strike_; // friend access
+    double K = option_-> _strike; // friend access
     double sigma_sqrt_T = volatility_ * std::sqrt(T);
     double d1 = (std::log(asset_price_ / K) + (interest_rate_ + 0.5 * volatility_ * volatility_) * T) / sigma_sqrt_T;
     double d2 = d1 - sigma_sqrt_T;
@@ -53,10 +53,10 @@ double BlackScholesPricer::price() const {
 double BlackScholesPricer::delta() const {
     double T = option_->getExpiry();
     if (T <= 0.0) {
-        return (option_->getOptionType() == OptionType::Call) ? (asset_price_ > option_-> strike_ ? 1.0 : 0.0) : (asset_price_ < option_-> strike_ ? -1.0 : 0.0);
+        return (option_->getOptionType() == OptionType::Call) ? (asset_price_ > option_-> _strike ? 1.0 : 0.0) : (asset_price_ < option_-> _strike ? -1.0 : 0.0);
     }
     double sigma_sqrt_T = volatility_ * std::sqrt(T);
-    double d1 = (std::log(asset_price_ / option_-> strike_) + (interest_rate_ + 0.5 * volatility_ * volatility_) * T) / sigma_sqrt_T;
+    double d1 = (std::log(asset_price_ / option_-> _strike) + (interest_rate_ + 0.5 * volatility_ * volatility_) * T) / sigma_sqrt_T;
     return option_->getOptionType() == OptionType::Call ? normalCdf(d1) : normalCdf(d1) - 1.0;
 }
 

@@ -2,8 +2,8 @@
 #include <stdexcept>
 #include <vector>
 
-Option::Option(double expiry) : expiry_(expiry) {
-    if (expiry_ < 0) {
+Option::Option(double expiry) : _expiry(expiry) {
+    if (_expiry < 0) {
         throw std::invalid_argument("Option: expiry must be nonnegative");
     }
 }
@@ -12,7 +12,7 @@ Option::Option(double expiry) : expiry_(expiry) {
  * @return the expiry time of the option.
  */
 double Option::getExpiry() const {
-    return expiry_;
+    return _expiry;
 }
 
 /**

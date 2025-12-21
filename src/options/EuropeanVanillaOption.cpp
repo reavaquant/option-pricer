@@ -8,7 +8,7 @@
  * @param strike the strike price of the option.
  * @throws std::invalid_argument if expiry or strike is negative.
  */
-EuropeanVanillaOption::EuropeanVanillaOption(double expiry, double strike) : Option(expiry), strike_(strike) {
+EuropeanVanillaOption::EuropeanVanillaOption(double expiry, double strike) : Option(expiry), _strike(strike) {
     if (strike < 0) {
         throw std::invalid_argument("EuropeanVanillaOption: strike must be nonnegative");
     }
@@ -20,5 +20,5 @@ EuropeanVanillaOption::EuropeanVanillaOption(double expiry, double strike) : Opt
  * @return the strike price of the option.
  */
 double EuropeanVanillaOption::getStrike() const {
-    return strike_;
+    return _strike;
 }
