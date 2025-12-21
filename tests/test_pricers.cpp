@@ -44,16 +44,16 @@ int main() {
     assert(std::fabs(call_pricer.delta() - expected_call_delta) < kEps);
     assert(std::fabs(put_pricer.delta() - expected_put_delta) < kEps);
 
-    // BlackScholesPricer digital_call_pricer(&digital_call, spot, rate, vol);
-    // BlackScholesPricer digital_put_pricer(&digital_put, spot, rate, vol);
-    // const double expected_digital_call = 0.5323248154537634;
-    // const double expected_digital_put = 0.41890460904695065;
-    // assert(std::fabs(digital_call_pricer.price() - expected_digital_call) < kEps);
-    // assert(std::fabs(digital_put_pricer.price() - expected_digital_put) < kEps);
+    BlackScholesPricer digital_call_pricer(&digital_call, spot, rate, vol);
+    BlackScholesPricer digital_put_pricer(&digital_put, spot, rate, vol);
+    const double expected_digital_call = 0.5323248154537634;
+    const double expected_digital_put = 0.41890460904695065;
+    assert(std::fabs(digital_call_pricer.price() - expected_digital_call) < kEps);
+    assert(std::fabs(digital_put_pricer.price() - expected_digital_put) < kEps);
 
-    // const double expected_digital_delta = 0.018762017345846895;
-    // assert(std::fabs(digital_call_pricer.delta() - expected_digital_delta) < kEps);
-    // assert(std::fabs(digital_put_pricer.delta() + expected_digital_delta) < kEps);
+    const double expected_digital_delta = 0.018762017345846895;
+    assert(std::fabs(digital_call_pricer.delta() - expected_digital_delta) < kEps);
+    assert(std::fabs(digital_put_pricer.delta() + expected_digital_delta) < kEps);
 
     // ----BlackScholesMCPricer tests----
 //     constexpr int mc_paths = 200000;
@@ -113,93 +113,93 @@ int main() {
 //     assert(std::fabs(digital_call_expired_pricer.delta()) < kEps);
 //     assert(std::fabs(digital_put_expired_pricer.delta()) < kEps);
 
-//     // ----CRRPricer tests----
-//     constexpr double crrS0 = 100.0;
-//     constexpr double crrU = 1.2;
-//     constexpr double crrD = 0.8;
-//     constexpr double crrR = 1.05;
-//     constexpr int crrDepth = 3;
+    // ----CRRPricer tests----
+    constexpr double crrS0 = 100.0;
+    // rendements : U=+20%, D=-20%, R=+5%
+    constexpr double crrU = 0.2;
+    constexpr double crrD = -0.2;
+    constexpr double crrR = 0.05;
+    constexpr int crrDepth = 3;
 
-//     CallOption crr_call(1.0, 100.0);
-//     CRRPricer crr_call_pricer(&crr_call, crrDepth, crrS0, crrU, crrD, crrR);
-//     const double expected_crr_call = 21.123528776590003;
-//     assert(std::fabs(crr_call_pricer(false) - expected_crr_call) < kEps);
-//     assert(std::fabs(crr_call_pricer(true) - expected_crr_call) < kEps);
-//     crr_call_pricer.compute();
-//     assert(std::fabs(crr_call_pricer.get(0, 0) - expected_crr_call) < kEps);
-//     assert(!crr_call_pricer.getExercise(0, 0));
+    CallOption crr_call(1.0, 100.0);
+    CRRPricer crr_call_pricer(&crr_call, crrDepth, crrS0, crrU, crrD, crrR);
+    const double expected_crr_call = 21.123528776590003;
+    assert(std::fabs(crr_call_pricer(false) - expected_crr_call) < kEps);
+    assert(std::fabs(crr_call_pricer(true) - expected_crr_call) < kEps);
+    crr_call_pricer.compute();
+    assert(std::fabs(crr_call_pricer.get(0, 0) - expected_crr_call) < kEps);
+    assert(!crr_call_pricer.getExercise(0, 0));
 
-//     PutOption crr_put(1.0, 100.0);
-//     CRRPricer crr_put_pricer(&crr_put, crrDepth, crrS0, crrU, crrD, crrR);
-//     const double expected_crr_put = 7.507288629737602;
-//     assert(std::fabs(crr_put_pricer(false) - expected_crr_put) < kEps);
-//     assert(std::fabs(crr_put_pricer(true) - expected_crr_put) < kEps);
+    PutOption crr_put(1.0, 100.0);
+    CRRPricer crr_put_pricer(&crr_put, crrDepth, crrS0, crrU, crrD, crrR);
+    const double expected_crr_put = 7.507288629737602;
+    assert(std::fabs(crr_put_pricer(false) - expected_crr_put) < kEps);
+    assert(std::fabs(crr_put_pricer(true) - expected_crr_put) < kEps);
 
-//     // CRRPricer constructor using (r, sigma)
-//     const double ctor_rate = 0.05;
-//     const double ctor_sigma = 0.2;
-//     CallOption crr_call_params(1.0, 100.0);
-//     const double dt = crr_call_params.getExpiry() / static_cast<double>(crrDepth);
-//     const double derivedU = std::exp(ctor_sigma * std::sqrt(dt));
-//     const double derivedD = std::exp(-ctor_sigma * std::sqrt(dt));
-//     const double derivedR = std::exp(ctor_rate * dt);
-//     CRRPricer crr_from_params(&crr_call_params, crrDepth, crrS0, derivedU, derivedD, derivedR);
-//     CRRPricer crr_from_rate(&crr_call_params, crrDepth, crrS0, ctor_rate, ctor_sigma);
-//     assert(std::fabs(crr_from_params(false) - crr_from_rate(false)) < kEps);
+    // constructeur (r, sigma)
+    const double ctor_rate = 0.05;
+    const double ctor_sigma = 0.2;
+    CallOption crr_call_params(1.0, 100.0);
+    const double dt = crr_call_params.getExpiry() / static_cast<double>(crrDepth);
+    const double derivedU = std::exp(ctor_sigma * std::sqrt(dt));
+    const double derivedD = std::exp(-ctor_sigma * std::sqrt(dt));
+    const double derivedR = std::exp(ctor_rate * dt);
+    // le ctor prend des rendements, donc on passe (facteur - 1.0)
+    CRRPricer crr_from_params(&crr_call_params, crrDepth, crrS0, derivedU - 1.0, derivedD - 1.0, derivedR - 1.0);
+    CRRPricer crr_from_rate(&crr_call_params, crrDepth, crrS0, ctor_rate, ctor_sigma);
+    assert(std::fabs(crr_from_params(false) - crr_from_rate(false)) < kEps);
 
-//     bool null_option_thrown = false;
-//     try {
-//         CRRPricer invalid_pricer(nullptr, crrDepth, crrS0, crrU, crrD, crrR);
-//     } catch (const std::invalid_argument&) {
-//         null_option_thrown = true;
-//     }
-//     assert(null_option_thrown);
+    bool null_option_thrown = false;
+    try {
+        CRRPricer invalid_pricer(nullptr, crrDepth, crrS0, crrU, crrD, crrR);
+    } catch (const std::invalid_argument&) {
+        null_option_thrown = true;
+    }
+    assert(null_option_thrown);
 
-//     bool arbitrage_params_thrown = false;
-//     try {
-//         CallOption dummy(1.0, 100.0);
-//         CRRPricer invalid_params(&dummy, crrDepth, crrS0, 0.9, 0.95, 0.9);
-//         (void)invalid_params;
-//     } catch (const std::invalid_argument&) {
-//         arbitrage_params_thrown = true;
-//     }
-//     assert(arbitrage_params_thrown);
+    bool arbitrage_params_thrown = false;
+    try {
+        CallOption dummy(1.0, 100.0);
+        CRRPricer invalid_params(&dummy, crrDepth, crrS0, 0.9, 0.95, 0.9);
+        (void)invalid_params;
+    } catch (const std::invalid_argument&) {
+        arbitrage_params_thrown = true;
+    }
+    assert(arbitrage_params_thrown);
 
-//     bool negative_depth_thrown = false;
-//     try {
-//         CallOption dummy(1.0, 100.0);
-//         CRRPricer invalid_depth(&dummy, -1, crrS0, crrU, crrD, crrR);
-//         (void)invalid_depth;
-//     } catch (const std::invalid_argument&) {
-//         negative_depth_thrown = true;
-//     }
-//     assert(negative_depth_thrown);
+    bool negative_depth_thrown = false;
+    try {
+        CallOption dummy(1.0, 100.0);
+        CRRPricer invalid_depth(&dummy, -1, crrS0, crrU, crrD, crrR);
+        (void)invalid_depth;
+    } catch (const std::invalid_argument&) {
+        negative_depth_thrown = true;
+    }
+    assert(negative_depth_thrown);
 
-//     bool zero_depth_rate_ctor = false;
-//     try {
-//         CallOption dummy(1.0, 100.0);
-//         CRRPricer invalid_rate_depth(&dummy, 0, crrS0, ctor_rate, ctor_sigma);
-//         (void)invalid_rate_depth;
-//     } catch (const std::invalid_argument&) {
-//         zero_depth_rate_ctor = true;
-//     }
-//     assert(zero_depth_rate_ctor);
+    bool zero_depth_rate_ctor = false;
+    try {
+        CallOption dummy(1.0, 100.0);
+        CRRPricer invalid_rate_depth(&dummy, 0, crrS0, ctor_rate, ctor_sigma);
+        (void)invalid_rate_depth;
+    } catch (const std::invalid_argument&) {
+        zero_depth_rate_ctor = true;
+    }
+    assert(zero_depth_rate_ctor);
 
-//     // American options through CRR
-//     AmericanCallOption american_call(1.0, 100.0);
-//     CRRPricer american_call_pricer(&american_call, crrDepth, crrS0, crrU, crrD, crrR);
-//     american_call_pricer.compute();
-//     assert(!american_call_pricer.getExercise(0, 0));
+    // American options via CRR
+    AmericanCallOption american_call(1.0, 100.0);
+    CRRPricer american_call_pricer(&american_call, crrDepth, crrS0, crrU, crrD, crrR);
+    american_call_pricer.compute();
+    assert(!american_call_pricer.getExercise(0, 0));
 
-//     constexpr double americanPutS0 = 90.0;
-//     AmericanPutOption american_put(1.0, 100.0);
-//     CRRPricer american_put_pricer(&american_put, crrDepth, americanPutS0, crrU, crrD, crrR);
-//     american_put_pricer.compute();
-//     // With these parameters the continuation value dominates the intrinsic,
-//     // so the optimal policy is to hold.
-//     const double expected_american_put = 12.891156462585029;
-//     assert(std::fabs(american_put_pricer.get(0, 0) - expected_american_put) < kEps);
-//     assert(!american_put_pricer.getExercise(0, 0));
+    constexpr double americanPutS0 = 90.0;
+    AmericanPutOption american_put(1.0, 100.0);
+    CRRPricer american_put_pricer(&american_put, crrDepth, americanPutS0, crrU, crrD, crrR);
+    american_put_pricer.compute();
+    const double expected_american_put = 12.891156462585029;
+    assert(std::fabs(american_put_pricer.get(0, 0) - expected_american_put) < kEps);
+    assert(!american_put_pricer.getExercise(0, 0));
 
     return 0;
 }

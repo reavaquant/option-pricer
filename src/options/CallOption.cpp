@@ -13,5 +13,5 @@ OptionType CallOption::getOptionType() const { return OptionType::Call; }
  * @return the off of the option.
  */
 double CallOption::payoff(double asset_price) const {
-    return asset_price > _strike ? asset_price - _strike : 0.0;
+    return asset_price >= _strike ? asset_price - _strike : 0.0;
 }

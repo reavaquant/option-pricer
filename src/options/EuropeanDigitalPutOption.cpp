@@ -6,8 +6,7 @@
  * @param expiry the expiry date of the option.
  * @param strike the strike price of the option.
  */
-EuropeanDigitalPutOption::EuropeanDigitalPutOption(double expiry, double strike)
-    : EuropeanDigitalOption(expiry, strike) {}
+EuropeanDigitalPutOption::EuropeanDigitalPutOption(double expiry, double strike) : EuropeanDigitalOption(expiry, strike) {}
 
 /**
  * Returns the type of the option.
