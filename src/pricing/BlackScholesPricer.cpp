@@ -18,38 +18,16 @@ namespace {
     }
 }
 
-BlackScholesPricer::BlackScholesPricer(EuropeanVanillaOption* option, double asset_price, double interest_rate, double volatility)
-    : option_(option), strike_(option ? option->getStrike() : 0.0), asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(false) {
+BlackScholesPricer::BlackScholesPricer(EuropeanVanillaOption* option, double asset_price, double interest_rate, double volatility) : option_(option), strike_(option ? option->getStrike() : 0.0), asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(false) {
     if (!option_) {
         throw std::invalid_argument("BlackScholesPricer: option pointer must not be null");
     }
 }
 
-BlackScholesPricer::BlackScholesPricer(EuropeanDigitalOption* option, double asset_price, double interest_rate, double volatility)
-    : option_(option), strike_(option ? option->getStrike() : 0.0),asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(true) {
+BlackScholesPricer::BlackScholesPricer(EuropeanDigitalOption* option, double asset_price, double interest_rate, double volatility) : option_(option), strike_(option ? option->getStrike() : 0.0),asset_price_(asset_price), interest_rate_(interest_rate), volatility_(volatility), is_digital_(true) {
     if (!option_) {
         throw std::invalid_argument("BlackScholesPricer: option pointer must not be null");
     }
-}
-
-/**
- * @brief Compute d1 and d2 values for Black-Scholes pricing formula.
- * 
- * @details The Black-Scholes pricing formula requires two normal CDF values, d1 and d2.
- * These values are computed based on the asset price, strike, interest rate, volatility, and maturity time.
- * The computed values are then used to calculate the price of the option.
- * 
- * @return A struct containing the computed d1 and d2 values.
- */
-BlackScholesPricer::DValues BlackScholesPricer::computeDValues() const {
-    const double T = std::max(option_->getExpiry(), kMinMaturity); // avoid division by zero
-    const double volatility = std::max(volatility_, kMinVolatility);
-    const double denominator = volatility * std::sqrt(T);
-    const double safe_strike = std::max(strike_, kMinPrice);
-    const double safe_spot = std::max(asset_price_, kMinPrice);
-
-    const double d1 = (std::log(safe_spot / safe_strike) + (interest_rate_ + 0.5 * volatility * volatility) * T) / denominator;
-    return {d1, d1 - denominator};
 }
 
 /**
@@ -62,23 +40,16 @@ BlackScholesPricer::DValues BlackScholesPricer::computeDValues() const {
  * Otherwise, the price of the option is calculated using the Black-Scholes model.
  */
 double BlackScholesPricer::price() const {
-    const double T = option_->getExpiry();
-    if (T <= 0.0 || volatility_ < kMinVolatility) {
-        return option_->payoff(asset_price_); // payoff at maturity or no volatility
-    }
-
-    const DValues d = computeDValues();
-    if (!is_digital_) {
-        if (option_->getOptionType() == OptionType::Call) {
-            return asset_price_ * normalCdf(d.d1) - strike_ * std::exp(-interest_rate_ * T) * normalCdf(d.d2);
-        }
-        return strike_ * std::exp(-interest_rate_ * T) * normalCdf(-d.d2) - asset_price_ * normalCdf(-d.d1);
-    }
-    const double discount = std::exp(-interest_rate_ * T);
-    if (option_->getOptionType() == OptionType::Call) {
-        return discount * normalCdf(d.d2);
-    }
-    return discount * normalCdf(-d.d2);
+    double T = option_->getExpiry();
+    if (T <= 0.0 || volatility_ <= 0.0) return option_->payoff(asset_price_);
+    double K = option_->_strike; // friend access
+    double sigma_sqrt_T = volatility_ * std::sqrt(T);
+    double d1 = (std::log(asset_price_ / K) + (interest_rate_ + 0.5 * volatility_ * volatility_) * T) / sigma_sqrt_T;
+    double d2 = d1 - sigma_sqrt_T;
+    auto N = [](double x){ return 0.5 * std::erfc(-x / std::sqrt(2.0)); };
+    if (option_->getOptionType() == OptionType::Call)
+        return asset_price_ * N(d1) - K * std::exp(-interest_rate_ * T) * N(d2);
+    return K * std::exp(-interest_rate_ * T) * N(-d2) - asset_price_ * N(-d1);
 }
 
 /**
