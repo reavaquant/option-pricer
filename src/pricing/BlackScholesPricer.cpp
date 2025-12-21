@@ -3,10 +3,22 @@
 #include <cmath>
 #include <stdexcept>
 
+/**
+ * @brief Compute the cumulative distribution function of the standard normal distribution.
+ * 
+ * @param x The value at which to compute the cumulative distribution function.
+ * @return The cumulative distribution function of the standard normal distribution evaluated at x.
+ */
 static double normalCdf(double x) {
     return 0.5 * std::erfc(-x / std::sqrt(2.0));
 }
 
+/**
+ * @brief Compute the probability density function of the standard normal distribution.
+ * 
+ * @param x The value at which to compute the probability density function.
+ * @return The probability density function of the standard normal distribution evaluated at x.
+ */
 static double normalPdf(double x) {
     const double inv_sqrt_2pi = 1 / std::sqrt(2.0 * M_PI);
     return inv_sqrt_2pi * std::exp(-0.5 * x * x);
@@ -24,13 +36,13 @@ BlackScholesPricer::BlackScholesPricer(EuropeanDigitalOption* option, double ass
     }
 }
 
+
 /**
- * @brief Calculate the price of the option using the Black-Scholes model.
- * @return The price of the option.
+ * @brief Return the estimated price of the option using the Black-Scholes model.
+ * @return The estimated price of the option.
  * 
- * The Black-Scholes model is used to calculate the price of the option.
- * If the time to maturity is less than or equal to zero or if the volatility is less than
- * or equal to zero, then the payoff of the option at maturity is returned.
+ * The price of the option is calculated using the Black-Scholes model.
+ * If the time to maturity is less than or equal to zero, then the price of the option at maturity is returned.
  * Otherwise, the price of the option is calculated using the Black-Scholes model.
  */
 double BlackScholesPricer::price() const {
@@ -56,15 +68,14 @@ double BlackScholesPricer::price() const {
     return K * std::exp(-interest_rate_ * T) * normalCdf(-d2) - asset_price_ * normalCdf(-d1);
 }
 
+
 /**
- * @brief Compute the delta (sensitivity) of the option price with respect to the underlying asset price.
+ * @brief Calculate the delta of the option using the Black-Scholes model.
+ * @return The delta of the option.
  * 
- * @return The delta (sensitivity) of the option price.
- * 
- * The delta (sensitivity) of the option price is computed using the Black-Scholes model.
- * If the time to maturity is less than or equal to zero or if the volatility is less than or equal to zero,
- * then the delta is computed as a step function.
- * Otherwise, the delta is computed as the partial derivative of the option price with respect to the underlying asset price.
+ * The delta of the option is calculated using the Black-Scholes model.
+ * If the time to maturity is less than or equal to zero, then the delta of the option at maturity is returned.
+ * Otherwise, the delta of the option is calculated using the Black-Scholes model.
  */
 double BlackScholesPricer::delta() const {
     const double T = is_digital_ ? digital_option_->getExpiry() : option_->getExpiry();
