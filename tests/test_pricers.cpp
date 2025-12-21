@@ -44,16 +44,16 @@ int main() {
     assert(std::fabs(call_pricer.delta() - expected_call_delta) < kEps);
     assert(std::fabs(put_pricer.delta() - expected_put_delta) < kEps);
 
-    // BlackScholesPricer digital_call_pricer(&digital_call, spot, rate, vol);
-    // BlackScholesPricer digital_put_pricer(&digital_put, spot, rate, vol);
-    // const double expected_digital_call = 0.5323248154537634;
-    // const double expected_digital_put = 0.41890460904695065;
-    // assert(std::fabs(digital_call_pricer.price() - expected_digital_call) < kEps);
-    // assert(std::fabs(digital_put_pricer.price() - expected_digital_put) < kEps);
+    BlackScholesPricer digital_call_pricer(&digital_call, spot, rate, vol);
+    BlackScholesPricer digital_put_pricer(&digital_put, spot, rate, vol);
+    const double expected_digital_call = 0.5323248154537634;
+    const double expected_digital_put = 0.41890460904695065;
+    assert(std::fabs(digital_call_pricer.price() - expected_digital_call) < kEps);
+    assert(std::fabs(digital_put_pricer.price() - expected_digital_put) < kEps);
 
-    // const double expected_digital_delta = 0.018762017345846895;
-    // assert(std::fabs(digital_call_pricer.delta() - expected_digital_delta) < kEps);
-    // assert(std::fabs(digital_put_pricer.delta() + expected_digital_delta) < kEps);
+    const double expected_digital_delta = 0.018762017345846895;
+    assert(std::fabs(digital_call_pricer.delta() - expected_digital_delta) < kEps);
+    assert(std::fabs(digital_put_pricer.delta() + expected_digital_delta) < kEps);
 
     // ----BlackScholesMCPricer tests----
 //     constexpr int mc_paths = 200000;

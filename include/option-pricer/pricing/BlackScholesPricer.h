@@ -13,13 +13,13 @@ public:
     double operator()() const;
 
 private:
-    EuropeanVanillaOption* option_;
-    EuropeanDigitalOption* digital_option_;
-    double strike_;
-    double asset_price_;
-    double interest_rate_;
-    double volatility_;
-    bool is_digital_;
+    EuropeanVanillaOption* option_{nullptr};
+    EuropeanDigitalOption* digital_option_{nullptr};
+    double strike_{0.0};
+    double asset_price_{0.0};
+    double interest_rate_{0.0};
+    double volatility_{0.0};
+    bool is_digital_{false};
 };
 
 
