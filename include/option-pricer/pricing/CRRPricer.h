@@ -20,7 +20,7 @@ private:
     BinaryTree<bool> exerciseTree_;
     
     bool computed_{false};
-    static long double binom_coeff(int N, int k);
+    static double binom_coeff(int N, int k);
 };
 
 #endif

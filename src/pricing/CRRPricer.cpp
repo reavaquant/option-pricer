@@ -1,8 +1,19 @@
-#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include "CRRPricer.h"
 
+/**
+ * @brief Construct a CRRPricer instance.
+ * @details This pricer uses the Cox-Ross-Rubinstein model to estimate the price of an option.
+ * It is constructed with an option, the depth of the binomial tree, the initial price of the underlying asset,
+ * the risk-free rate, the rate of continuous compounding of the underlying asset, and the rate of continuous dividend yield.
+ * @param option The option to be priced.
+ * @param depth The depth of the binomial tree.
+ * @param S0 The initial price of the underlying asset.
+ * @param U The rate of continuous compounding of the underlying asset.
+ * @param D The rate of continuous dividend yield.
+ * @param R The risk-free rate.
+ */
 CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : option_(option), depth_(depth), S0_(S0) {
     if (!option_) {
         throw std::invalid_argument("CRRPricer: option is null");
@@ -30,12 +41,16 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
     exerciseTree_.setDepth(depth_);
 }
 
+
 /**
- * @brief Construct a CRRPricer instance.
- * @details This pricer uses the CRR binomial model to estimate the price of an option.
- * It is constructed with an option, a depth, an initial price, an interest rate, and a volatility.
- * The option must not be null, and the depth must be > 0.
- * The interest rate and volatility must be such that the returns D, R, and U satisfy D < R < U.
+ * @brief Construct a CRRPricer instance with parameters.
+ * 
+ * @details This constructor takes an option, the depth of the binomial tree,
+ * the initial price of the underlying asset, the interest rate, and the volatility.
+ * It first checks that the option is not null and that the depth is greater than 0.
+ * Then it computes the time step of the binomial tree, and uses this to compute U, D, and R.
+ * Finally, it checks that D < R < U, and throws an exception if this is not true.
+ * 
  * @param option The option to be priced.
  * @param depth The depth of the binomial tree.
  * @param S0 The initial price of the underlying asset.
@@ -66,6 +81,19 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double vola
     exerciseTree_.setDepth(depth_);
 }
 
+/**
+ * @brief Compute the price of the option using the CRR model.
+ * 
+ * This function computes the price of the option using the CRR model.
+ * It first initializes the binomial tree with the payoff values at each node.
+ * Then it iterates over the tree from the last node to the first node, computing the
+ * value of each node based on its children. If the option is an American option,
+ * it also checks if exercising the option at each node yields a higher value than not
+ * exercising it, and updates the value and exercise decision accordingly.
+ * Finally, it sets the computed_ flag to true.
+ * 
+ * @throws std::logic_error if compute() has not been called before.
+ */
 void CRRPricer::compute() {
     double q = (R_ - D_) / (U_ - D_);
     bool american = option_->isAmericanOption();
@@ -101,6 +129,20 @@ void CRRPricer::compute() {
     computed_ = true;
 }
 
+/**
+ * @brief Get the value of the option at node (n, i).
+ * 
+ * This function returns the value of the option at node (n, i) in the
+ * binomial tree. If compute() has not been called before, a
+ * std::logic_error is thrown.
+ * 
+ * @param n the level of the binomial tree (0 <= n <= depth_).
+ * @param i the index of the node in the level (0 <= i <= n).
+ * 
+ * @return the value of the option at node (n, i).
+ * 
+ * @throws std::logic_error if compute() has not been called before.
+ */
 double CRRPricer::get(int n, int i) {
     if (!computed_) {
         throw std::logic_error("CRRPricer::get needs compute() first");
@@ -108,6 +150,15 @@ double CRRPricer::get(int n, int i) {
     return optionTree_.getNode(n, i);
 }
 
+/**
+ * @brief Get the exercise decision at node (n, i).
+ * 
+ * @param n the level of the binary tree (0 <= n <= depth_).
+ * @param i the index of the node in the level (0 <= i <= n).
+ * @return true if the option should be exercised at node (n, i), false otherwise.
+ * 
+ * @throws std::logic_error if compute() has not been called before.
+ */
 bool CRRPricer::getExercise(int n, int i) {
     if (!computed_) {
         throw std::logic_error("CRRPricer::getExercise needs compute() first");
@@ -115,16 +166,39 @@ bool CRRPricer::getExercise(int n, int i) {
     return exerciseTree_.getNode(n, i);
 }
 
-long double CRRPricer::binom_coeff(int N, int k) {
-    if (k < 0 || k > N) return 0.0L;
-    int m = std::min(k, N - k);
-    long double c = 1.0L;
-    for (int j = 1; j <= m; ++j) {
-        c = c * static_cast<long double>(N - m + j) / static_cast<long double>(j);
+/**
+ * @brief Calculate the binomial coefficient N choose k.
+ *
+ * @param N The number of items to choose from.
+ * @param k The number of items to choose.
+ * @return The binomial coefficient N choose k.
+ *
+ * This function uses the following formula to compute the binomial coefficient:
+ * \f[ N \choose k ] = \frac{N!}{k!(N-k)!}
+ *
+ * It also uses symmetry to reduce the number of operations needed.
+ */
+double CRRPricer::binom_coeff(int N, int k) {
+    if (k < 0 || k > N) return 0.0;
+    if (k > N - k) k = N - k; // symétrie
+    long double c = 1.0;
+    for (int j = 1; j <= k; ++j) {
+        c = c * (N - k + j);
+        c = c / j;
     }
     return c;
 }
 
+/**
+ * @brief Calculate the price of the option using the CRR model.
+ * 
+ * @param closed_form If true, use the closed-form formula for European options.
+ * @return The price of the option.
+ * 
+ * If closed_form is false, the price is calculated using the binomial tree.
+ * If closed_form is true, the price is calculated using the closed-form formula.
+ * Note that the closed-form formula is only valid for European options.
+ */
 double CRRPricer::operator()(bool closed_form) {
     if (option_->isAmericanOption() && closed_form) {
         throw std::logic_error("CRRPricer: closed form only for European options");
