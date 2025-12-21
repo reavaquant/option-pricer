@@ -3,7 +3,7 @@
 #include "Option.h"
 
 class EuropeanVanillaOption : public Option {
-private:
+protected:
     double _strike;
 public:
     EuropeanVanillaOption(double expiry, double strike);
