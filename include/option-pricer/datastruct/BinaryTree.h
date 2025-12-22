@@ -61,26 +61,35 @@ public:
   ///
   /// @param os the output stream to write to (default is std::cout).
   void display(std::ostream& os = std::cout) const {
-    const std::size_t w = valueWidth();
-    const int gap = (int)(w + 2);
+    int nodeWidth = static_cast<int>(valueWidth());
+    int gap = nodeWidth + 2;
+    if (gap % 2 != 0) {
+      gap += 1;
+    }
 
+    int n = 0;
+    int i = 0;
     int indent = 0;
-    std::string val;
     int pad = 0;
     int connIndent = 0;
+    std::ostringstream ss;
+    std::string val;
 
-    for (int n = 0; n <= _depth; ++n) {
-      indent = (_depth - n) * gap / 2;
-      if (indent < 0) indent = 0;
+    for (n = 0; n <= _depth; ++n) {
+      indent = static_cast<int>((_depth - n) * (gap / 2.0));
       os << std::string(indent, ' ');
-      for (int i = 0; i <= n; ++i) {
-        std::ostringstream ss;
+
+      for (i = 0; i <= n; ++i) {
+        ss.str("");
+        ss.clear();
         ss << _tree[n][i];
         val = ss.str();
-        pad = gap - (int)val.size();
+        pad = gap - static_cast<int>(val.size());
         if (pad < 1) pad = 1;
         os << val;
-        if (i < n) os << std::string(pad, ' ');
+        if (i < n) {
+          os << std::string(pad, ' ');
+        }
       }
       os << '\n';
 
@@ -88,14 +97,17 @@ public:
         connIndent = indent - 1;
         if (connIndent < 0) connIndent = 0;
         os << std::string(connIndent, ' ');
-        for (int i = 0; i <= n; ++i) {
+        for (i = 0; i <= n; ++i) {
           os << "/ \\";
-          if (i < n) os << std::string(gap - 1, ' ');
+          if (i < n) {
+            os << std::string(gap - 3, ' ');
+          }
         }
         os << '\n';
       }
     }
   }
+
 
 private:
   int _depth;
