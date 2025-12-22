@@ -16,7 +16,8 @@ public:
     virtual double payoff(double asset_price) const = 0;
     virtual OptionType getOptionType() const = 0;
     virtual ~Option(){}
-    virtual std::vector<double> payoffPath(const std::vector<double>& path) const;
+    virtual std::vector<double> getTimeSteps() const;
+    virtual double payoffPath(const std::vector<double>& path) const;
     virtual bool isAsianOption() const;
     virtual bool isAmericanOption() const;
 };

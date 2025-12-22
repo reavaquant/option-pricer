@@ -57,10 +57,12 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
  * @param r The interest rate of the risk-free asset.
  * @param volatility The volatility of the underlying asset.
  */
-CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double volatility)
-    : option_(option), depth_(depth), S0_(S0) {
+CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double volatility) : option_(option), depth_(depth), S0_(S0) {
     if (!option_) {
         throw std::invalid_argument("CRRPricer: option is null");
+    }
+    if (option_->isAsianOption()) {
+        throw std::invalid_argument("CRRPricer: Asian option not supported");
     }
     if (depth_ <= 0) {
         throw std::invalid_argument("CRRPricer: depth must be > 0");
@@ -68,6 +70,9 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double vola
 
     double T = option_->getExpiry();
     double dt = T / depth_;
+    if (dt <= 0.0) {
+        throw std::invalid_argument("CRRPricer: time step must be positive");
+    }
     double step = volatility * std::sqrt(dt);
     U_ = std::exp(step);
     D_ = std::exp(-step);
@@ -98,24 +103,33 @@ void CRRPricer::compute() {
     double q = (R_ - D_) / (U_ - D_);
     bool american = option_->isAmericanOption();
 
+    double s = 0.0;
+    double payoff = 0.0;
+    double up = 0.0;
+    double down = 0.0;
+    double cont = 0.0;
+    double value = 0.0;
+    bool ex = false;
+    double intrinsic = 0.0;
+
     for (int i = 0; i <= depth_; ++i) {
-        double s = S0_ * std::pow(U_, i) * std::pow(D_, depth_ - i);
-        double payoff = option_->payoff(s);
+        s = S0_ * std::pow(U_, i) * std::pow(D_, depth_ - i);
+        payoff = option_->payoff(s);
         optionTree_.setNode(depth_, i, payoff);
         exerciseTree_.setNode(depth_, i, american && payoff > 0.0);
     }
 
     for (int n = depth_ - 1; n >= 0; --n) {
         for (int i = 0; i <= n; ++i) {
-            double up = optionTree_.getNode(n + 1, i + 1);
-            double down = optionTree_.getNode(n + 1, i);
-            double cont = (q * up + (1.0 - q) * down) / R_;
-            double value = cont;
-            bool ex = false;
+            up = optionTree_.getNode(n + 1, i + 1);
+            down = optionTree_.getNode(n + 1, i);
+            cont = (q * up + (1.0 - q) * down) / R_;
+            value = cont;
+            ex = false;
 
             if (american) {
-                double s = S0_ * std::pow(U_, i) * std::pow(D_, n - i);
-                double intrinsic = option_->payoff(s);
+                s = S0_ * std::pow(U_, i) * std::pow(D_, n - i);
+                intrinsic = option_->payoff(s);
                 if (intrinsic > cont) {
                     value = intrinsic;
                     ex = true;
@@ -136,8 +150,8 @@ void CRRPricer::compute() {
  * binomial tree. If compute() has not been called before, a
  * std::logic_error is thrown.
  * 
- * @param n the level of the binomial tree (0 <= n <= depth_).
- * @param i the index of the node in the level (0 <= i <= n).
+ * @param n the level of the binomial tree
+ * @param i the index of the node in the level
  * 
  * @return the value of the option at node (n, i).
  * 
@@ -153,8 +167,8 @@ double CRRPricer::get(int n, int i) {
 /**
  * @brief Get the exercise decision at node (n, i).
  * 
- * @param n the level of the binary tree (0 <= n <= depth_).
- * @param i the index of the node in the level (0 <= i <= n).
+ * @param n the level of the binary tree
+ * @param i the index of the node in the level
  * @return true if the option should be exercised at node (n, i), false otherwise.
  * 
  * @throws std::logic_error if compute() has not been called before.
@@ -173,15 +187,12 @@ bool CRRPricer::getExercise(int n, int i) {
  * @param k The number of items to choose.
  * @return The binomial coefficient N choose k.
  *
- * This function uses the following formula to compute the binomial coefficient:
- * \f[ N \choose k ] = \frac{N!}{k!(N-k)!}
- *
  * It also uses symmetry to reduce the number of operations needed.
  */
 double CRRPricer::binom_coeff(int N, int k) {
     if (k < 0 || k > N) return 0.0;
-    if (k > N - k) k = N - k; // symétrie
-    long double c = 1.0;
+    if (k > N - k) k = N - k; // symetry
+    double c = 1.0;
     for (int j = 1; j <= k; ++j) {
         c = c * (N - k + j);
         c = c / j;
@@ -211,9 +222,11 @@ double CRRPricer::operator()(bool closed_form) {
 
     double q = (R_ - D_) / (U_ - D_);
     double price = 0.0;
+    double s = 0.0;
+    double weight = 0.0;
     for (int i = 0; i <= depth_; ++i) {
-        double s = S0_ * std::pow(U_, i) * std::pow(D_, depth_ - i);
-        double weight = binom_coeff(depth_, i);
+        s = S0_ * std::pow(U_, i) * std::pow(D_, depth_ - i);
+        weight = binom_coeff(depth_, i);
         weight *= std::pow(q, i) * std::pow(1.0 - q, depth_ - i);
         price += weight * option_->payoff(s);
     }
