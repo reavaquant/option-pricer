@@ -5,13 +5,13 @@
 
 class CRRPricer{
 private:
-    Option* option_;
-    int depth_;
-    double S0_, U_, D_, R_;
-    BinaryTree<double> optionTree_;
-    BinaryTree<bool> exerciseTree_;
+    Option* _option;
+    int _depth;
+    double _S0, _U, _D, _R;
+    BinaryTree<double> _optionTree;
+    BinaryTree<bool> _exerciseTree;
     
-    bool computed_{false};
+    bool _computed{false};
     static double binom_coeff(int N, int k);
 public:
     CRRPricer(Option* option, int depth, double S0, double U, double D, double R);

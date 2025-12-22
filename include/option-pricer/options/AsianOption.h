@@ -5,7 +5,7 @@
 
 class AsianOption : public Option {
 private:
-    std::vector<double> timeSteps_;
+    std::vector<double> _timeSteps;
 public:
     AsianOption(std::vector<double> timeSteps);
     std::vector<double> getTimeSteps() const override;

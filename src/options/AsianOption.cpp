@@ -3,8 +3,8 @@
 #include <utility>
 #include <vector>
 
-AsianOption::AsianOption(std::vector<double> timeSteps) : Option(timeSteps.empty() ? 0.0 : timeSteps.back()), timeSteps_(std::move(timeSteps)) {
-    if (timeSteps_.empty()) {
+AsianOption::AsianOption(std::vector<double> timeSteps) : Option(timeSteps.empty() ? 0.0 : timeSteps.back()), _timeSteps(std::move(timeSteps)) {
+    if (_timeSteps.empty()) {
         throw std::invalid_argument("AsianOption: time steps cannot be empty");
     }
 }
@@ -15,7 +15,7 @@ AsianOption::AsianOption(std::vector<double> timeSteps) : Option(timeSteps.empty
  * @return A vector containing the time steps associated with the Asian option.
  */
 std::vector<double> AsianOption::getTimeSteps() const {
-    return timeSteps_;
+    return _timeSteps;
 }
 
 /**

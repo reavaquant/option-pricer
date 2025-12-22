@@ -18,40 +18,40 @@
  * @param interest_rate The interest rate of the risk-free asset.
  * @param volatility The volatility of the underlying asset.
  */
-BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price, double interest_rate, double volatility) : option_(option), initial_price_(initial_price), interest_rate_(interest_rate), volatility_(volatility) {
-    if (!option_) {
+BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price, double interest_rate, double volatility) : _option(option), _initial_price(initial_price), _interest_rate(interest_rate), _volatility(volatility) {
+    if (!_option) {
         throw std::invalid_argument("BlackScholesMCPricer: option pointer must not be null");
     }
 
-    nb_paths_ = 0;
-    estimate_ = 0.0;
-    M2_ = 0.0;
+    _nb_paths = 0;
+    _estimate = 0.0;
+    _M2 = 0.0;
 
-    time_steps_ = option_->getTimeSteps();
+    _time_steps = _option->getTimeSteps();
 
-    std::size_t steps = time_steps_.size();
+    std::size_t steps = _time_steps.size();
     if (steps == 0) {
         throw std::invalid_argument("BlackScholesMCPricer: need at least one time step");
     }
-    drift_dt_.resize(steps);
-    vol_sqrt_dt_.resize(steps);
+    _drift_dt.resize(steps);
+    _vol_sqrt_dt.resize(steps);
     double last_t = 0.0;
-    const double drift = interest_rate_ - 0.5 * volatility_ * volatility_;
+    const double drift = _interest_rate - 0.5 * _volatility * _volatility;
     std::size_t idx = 0;
     double t = 0.0;
     double dt = 0.0;
     while (idx < steps) {
-        t = time_steps_[idx];
+        t = _time_steps[idx];
         dt = t - last_t;
         if (dt <= 0.0) {
             throw std::invalid_argument("BlackScholesMCPricer: time steps must be increasing");
         }
-        drift_dt_[idx] = drift * dt;
-        vol_sqrt_dt_[idx] = volatility_ * std::sqrt(dt);
+        _drift_dt[idx] = drift * dt;
+        _vol_sqrt_dt[idx] = _volatility * std::sqrt(dt);
         last_t = t;
         idx++;
     }
-    maturity_ = time_steps_[steps - 1];
+    _maturity = _time_steps[steps - 1];
 }
 
 /**
@@ -62,7 +62,7 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
  * The number of paths is set by the generate() function.
  */
 int BlackScholesMCPricer::getNbPaths() const {
-    return nb_paths_;
+    return _nb_paths;
 }
 
 
@@ -79,10 +79,10 @@ void BlackScholesMCPricer::generate(int nb_paths) {
         return;
     }
 
-    const std::size_t steps = time_steps_.size();
+    const std::size_t steps = _time_steps.size();
     std::vector<double> path_pos(steps);
     std::vector<double> path_neg(steps);
-    const double df = std::exp(-interest_rate_ * maturity_);
+    const double df = std::exp(-_interest_rate * _maturity);
     double s_pos = 0.0;
     double s_neg = 0.0;
     double z = 0.0;
@@ -91,33 +91,33 @@ void BlackScholesMCPricer::generate(int nb_paths) {
 
     int generated = 0;
     while (generated < nb_paths) {
-        s_pos = initial_price_;
-        s_neg = initial_price_;
+        s_pos = _initial_price;
+        s_neg = _initial_price;
 
         for (std::size_t k = 0; k < steps; ++k) { // construct both path
             z = MT::rand_norm();
-            s_pos *= std::exp(drift_dt_[k] + vol_sqrt_dt_[k] * z);
-            s_neg *= std::exp(drift_dt_[k] - vol_sqrt_dt_[k] * z);
+            s_pos *= std::exp(_drift_dt[k] + _vol_sqrt_dt[k] * z);
+            s_neg *= std::exp(_drift_dt[k] - _vol_sqrt_dt[k] * z);
             path_pos[k] = s_pos;
             path_neg[k] = s_neg;
         }
 
-        payoff_discounted = df * option_->payoffPath(path_pos);
+        payoff_discounted = df * _option->payoffPath(path_pos);
         // update mean
-        nb_paths_++;
-        delta = payoff_discounted - estimate_;
-        double n = (double)nb_paths_;
-        estimate_ += delta / n;
-        M2_ += delta * (payoff_discounted - estimate_); // welford algorithm for variance
+        _nb_paths++;
+        delta = payoff_discounted - _estimate;
+        double n = (double)_nb_paths;
+        _estimate += delta / n;
+        _M2 += delta * (payoff_discounted - _estimate); // welford algorithm for variance
         generated++;
 
         if (generated < nb_paths) { //add negative path if nb_paths is odd
-            payoff_discounted = df * option_->payoffPath(path_neg);
-            nb_paths_++;
-            delta = payoff_discounted - estimate_;
-            n = (double)nb_paths_;
-            estimate_ += delta / n;
-            M2_ += delta * (payoff_discounted - estimate_);
+            payoff_discounted = df * _option->payoffPath(path_neg);
+            _nb_paths++;
+            delta = payoff_discounted - _estimate;
+            n = (double)_nb_paths;
+            _estimate += delta / n;
+            _M2 += delta * (payoff_discounted - _estimate);
             generated++;
         }
     }
@@ -131,10 +131,10 @@ void BlackScholesMCPricer::generate(int nb_paths) {
  * @throws std::logic_error If generate() has not been called before requesting the price.
  */
 double BlackScholesMCPricer::price() {
-    if (nb_paths_ == 0) {
+    if (_nb_paths == 0) {
         throw std::logic_error("BlackScholesMCPricer: call generate() before requesting price");
     }
-    return estimate_;
+    return _estimate;
 }
 
 /**
@@ -157,11 +157,11 @@ double BlackScholesMCPricer::operator()() {
  * If generate() has not been called with at least two paths, then a logic_error exception is thrown.
  */
 std::vector<double> BlackScholesMCPricer::confidenceInterval() {
-    if (nb_paths_ < 2) {
+    if (_nb_paths < 2) {
         throw std::logic_error("BlackScholesMCPricer: need at least two paths for confidence interval");
     }
-    double variance = M2_ / static_cast<double>(nb_paths_ - 1);
-    double std_err = std::sqrt(variance / static_cast<double>(nb_paths_));
+    double variance = _M2 / static_cast<double>(_nb_paths - 1);
+    double std_err = std::sqrt(variance / static_cast<double>(_nb_paths));
     const double z = 1.96;
-    return {estimate_ - z * std_err, estimate_ + z * std_err};
+    return {_estimate - z * std_err, _estimate + z * std_err};
 }

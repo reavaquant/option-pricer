@@ -14,31 +14,31 @@
  * @param D The rate of continuous dividend yield.
  * @param R The risk-free rate.
  */
-CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : option_(option), depth_(depth), S0_(S0) {
-    if (!option_) {
+CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : _option(option), _depth(depth), _S0(S0) {
+    if (!_option) {
         throw std::invalid_argument("CRRPricer: option is null");
     }
-    if (option_->isAsianOption()) {
+    if (_option->isAsianOption()) {
         throw std::invalid_argument("CRRPricer: Asian option not supported");
     }
-    if (depth_ < 0) {
+    if (_depth < 0) {
         throw std::invalid_argument("CRRPricer: depth must be >= 0");
     }
 
     // inputs are returns not rates so add 1
-    U_ = 1.0 + U;
-    D_ = 1.0 + D;
-    R_ = 1.0 + R;
+    _U = 1.0 + U;
+    _D = 1.0 + D;
+    _R = 1.0 + R;
 
-    if (U_ <= 0.0 || D_ <= 0.0 || R_ <= 0.0) {
+    if (_U <= 0.0 || _D <= 0.0 || _R <= 0.0) {
         throw std::invalid_argument("CRRPricer: returns must be > -100%");
     }
-    if (!(D_ < R_ && R_ < U_)) {
+    if (!(_D < _R && _R < _U)) {
         throw std::invalid_argument("CRRPricer: need D < R < U"); //arbitrage checks
     }
 
-    optionTree_.setDepth(depth_);
-    exerciseTree_.setDepth(depth_);
+    _optionTree.setDepth(_depth);
+    _exerciseTree.setDepth(_depth);
 }
 
 
@@ -57,33 +57,34 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, d
  * @param r The interest rate of the risk-free asset.
  * @param volatility The volatility of the underlying asset.
  */
-CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double volatility) : option_(option), depth_(depth), S0_(S0) {
-    if (!option_) {
+CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double volatility) : _option(option), _depth(depth), _S0(S0) {
+    if (!_option) {
         throw std::invalid_argument("CRRPricer: option is null");
     }
-    if (option_->isAsianOption()) {
+    if (_option->isAsianOption()) {
         throw std::invalid_argument("CRRPricer: Asian option not supported");
     }
-    if (depth_ <= 0) {
+    if (_depth <= 0) {
         throw std::invalid_argument("CRRPricer: depth must be > 0");
     }
 
-    double T = option_->getExpiry();
-    double dt = T / depth_;
+    double T = _option->getExpiry();
+    double dt = T / _depth;
     if (dt <= 0.0) {
         throw std::invalid_argument("CRRPricer: time step must be positive");
     }
-    double step = volatility * std::sqrt(dt);
-    U_ = std::exp(step);
-    D_ = std::exp(-step);
-    R_ = std::exp(r * dt);
+    const double drift = (r + 0.5 * volatility * volatility) * dt;
+    const double step = volatility * std::sqrt(dt);
+    _U = std::exp(drift + step);
+    _D = std::exp(drift - step);
+    _R = std::exp(r * dt);
 
-    if (!(D_ < R_ && R_ < U_)) {
+    if (!(_D < _R && _R < _U)) {
         throw std::invalid_argument("CRRPricer: need D < R < U");
     }
 
-    optionTree_.setDepth(depth_);
-    exerciseTree_.setDepth(depth_);
+    _optionTree.setDepth(_depth);
+    _exerciseTree.setDepth(_depth);
 }
 
 /**
@@ -95,16 +96,17 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double vola
  * value of each node based on its children. If the option is an American option,
  * it also checks if exercising the option at each node yields a higher value than not
  * exercising it, and updates the value and exercise decision accordingly.
- * Finally, it sets the computed_ flag to true.
+ * Finally, it sets the _computed flag to true.
  * 
  * @throws std::logic_error if compute() has not been called before.
  */
 void CRRPricer::compute() {
-    double q = (R_ - D_) / (U_ - D_);
-    bool american = option_->isAmericanOption();
+    double q = (_R - _D) / (_U - _D);
+    bool american = _option->isAmericanOption();
 
     double s = 0.0;
     double payoff = 0.0;
+    bool exercise_now = false;
     double up = 0.0;
     double down = 0.0;
     double cont = 0.0;
@@ -112,35 +114,36 @@ void CRRPricer::compute() {
     bool ex = false;
     double intrinsic = 0.0;
 
-    for (int i = 0; i <= depth_; ++i) {
-        s = S0_ * std::pow(U_, i) * std::pow(D_, depth_ - i);
-        payoff = option_->payoff(s);
-        optionTree_.setNode(depth_, i, payoff);
-        exerciseTree_.setNode(depth_, i, american && payoff > 0.0);
+    for (int i = 0; i <= _depth; ++i) {
+        s = _S0 * std::pow(_U, i) * std::pow(_D, _depth - i);
+        payoff = _option->payoff(s);
+        _optionTree.setNode(_depth, i, payoff);
+        exercise_now = american && payoff >= 0.0;
+        _exerciseTree.setNode(_depth, i, exercise_now);
     }
 
-    for (int n = depth_ - 1; n >= 0; --n) {
+    for (int n = _depth - 1; n >= 0; --n) {
         for (int i = 0; i <= n; ++i) {
-            up = optionTree_.getNode(n + 1, i + 1);
-            down = optionTree_.getNode(n + 1, i);
-            cont = (q * up + (1.0 - q) * down) / R_;
+            up = _optionTree.getNode(n + 1, i + 1);
+            down = _optionTree.getNode(n + 1, i);
+            cont = (q * up + (1.0 - q) * down) / _R;
             value = cont;
             ex = false;
 
             if (american) {
-                s = S0_ * std::pow(U_, i) * std::pow(D_, n - i);
-                intrinsic = option_->payoff(s);
-                if (intrinsic > cont) {
+                s = _S0 * std::pow(_U, i) * std::pow(_D, n - i);
+                intrinsic = _option->payoff(s);
+                if (intrinsic >= cont) {
                     value = intrinsic;
                     ex = true;
                 }
             }
 
-            optionTree_.setNode(n, i, value);
-            exerciseTree_.setNode(n, i, ex);
+            _optionTree.setNode(n, i, value);
+            _exerciseTree.setNode(n, i, ex);
         }
     }
-    computed_ = true;
+    _computed = true;
 }
 
 /**
@@ -158,10 +161,10 @@ void CRRPricer::compute() {
  * @throws std::logic_error if compute() has not been called before.
  */
 double CRRPricer::get(int n, int i) {
-    if (!computed_) {
+    if (!_computed) {
         throw std::logic_error("CRRPricer::get needs compute() first");
     }
-    return optionTree_.getNode(n, i);
+    return _optionTree.getNode(n, i);
 }
 
 /**
@@ -174,10 +177,10 @@ double CRRPricer::get(int n, int i) {
  * @throws std::logic_error if compute() has not been called before.
  */
 bool CRRPricer::getExercise(int n, int i) {
-    if (!computed_) {
+    if (!_computed) {
         throw std::logic_error("CRRPricer::getExercise needs compute() first");
     }
-    return exerciseTree_.getNode(n, i);
+    return _exerciseTree.getNode(n, i);
 }
 
 /**
@@ -211,24 +214,24 @@ double CRRPricer::binom_coeff(int N, int k) {
  * Note that the closed-form formula is only valid for European options.
  */
 double CRRPricer::operator()(bool closed_form) {
-    if (option_->isAmericanOption() && closed_form) {
+    if (_option->isAmericanOption() && closed_form) {
         throw std::logic_error("CRRPricer: closed form only for European options");
     }
 
     if (!closed_form) {
-        if (!computed_) compute();
-        return optionTree_.getNode(0, 0);
+        if (!_computed) compute();
+        return _optionTree.getNode(0, 0);
     }
 
-    double q = (R_ - D_) / (U_ - D_);
+    double q = (_R - _D) / (_U - _D);
     double price = 0.0;
     double s = 0.0;
     double weight = 0.0;
-    for (int i = 0; i <= depth_; ++i) {
-        s = S0_ * std::pow(U_, i) * std::pow(D_, depth_ - i);
-        weight = binom_coeff(depth_, i);
-        weight *= std::pow(q, i) * std::pow(1.0 - q, depth_ - i);
-        price += weight * option_->payoff(s);
+    for (int i = 0; i <= _depth; ++i) {
+        s = _S0 * std::pow(_U, i) * std::pow(_D, _depth - i);
+        weight = binom_coeff(_depth, i);
+        weight *= std::pow(q, i) * std::pow(1.0 - q, _depth - i);
+        price += weight * _option->payoff(s);
     }
-    return price / std::pow(R_, depth_);
+    return price / std::pow(_R, _depth);
 }

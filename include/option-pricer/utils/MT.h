@@ -4,6 +4,8 @@
 #include <random>
 
 class MT {
+private:
+    static std::mt19937& generator();
 public:
     MT() = delete;
     MT(const MT&) = delete;
@@ -11,9 +13,6 @@ public:
 
     static double rand_unif();
     static double rand_norm();
-
-private:
-    static std::mt19937& generator();
 };
 
 #endif

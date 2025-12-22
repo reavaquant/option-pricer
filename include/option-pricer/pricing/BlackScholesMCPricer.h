@@ -7,17 +7,17 @@
 
 class BlackScholesMCPricer {
 private:
-    Option* option_;
-    double initial_price_;
-    double interest_rate_;
-    double volatility_;
-    int nb_paths_;
-    double estimate_;
-    double M2_;
-    double maturity_;
-    std::vector<double> time_steps_;
-    std::vector<double> drift_dt_;
-    std::vector<double> vol_sqrt_dt_;
+    Option* _option;
+    double _initial_price;
+    double _interest_rate;
+    double _volatility;
+    int _nb_paths;
+    double _estimate;
+    double _M2;
+    double _maturity;
+    std::vector<double> _time_steps;
+    std::vector<double> _drift_dt;
+    std::vector<double> _vol_sqrt_dt;
 public:
     BlackScholesMCPricer(Option* option, double initial_price, double interest_rate, double volatility);
     double price();
