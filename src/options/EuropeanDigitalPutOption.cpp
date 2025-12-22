@@ -6,8 +6,7 @@
  * @param expiry the expiry date of the option.
  * @param strike the strike price of the option.
  */
-EuropeanDigitalPutOption::EuropeanDigitalPutOption(double expiry, double strike)
-    : EuropeanDigitalOption(expiry, strike) {}
+EuropeanDigitalPutOption::EuropeanDigitalPutOption(double expiry, double strike) : EuropeanDigitalOption(expiry, strike) {}
 
 /**
  * Returns the type of the option.
@@ -27,5 +26,5 @@ OptionType EuropeanDigitalPutOption::getOptionType() const {
  * @return the off of the option.
  */
 double EuropeanDigitalPutOption::payoff(double asset_price) const {
-    return asset_price <= strike_ ? 1.0 : 0.0;
+    return asset_price <= _strike ? 1.0 : 0.0;
 }

@@ -12,8 +12,7 @@
  * @param expiry The expiry date of the option.
  * @param strike The strike price of the option.
  */
-EuropeanDigitalCallOption::EuropeanDigitalCallOption(double expiry, double strike)
-    : EuropeanDigitalOption(expiry, strike) {}
+EuropeanDigitalCallOption::EuropeanDigitalCallOption(double expiry, double strike) : EuropeanDigitalOption(expiry, strike) {}
 
 /**
  * Returns the type of the option.
@@ -33,5 +32,5 @@ OptionType EuropeanDigitalCallOption::getOptionType() const {
  * @return the off of the option.
  */
 double EuropeanDigitalCallOption::payoff(double asset_price) const {
-    return asset_price >= strike_ ? 1.0 : 0.0;
+    return asset_price >= _strike ? 1.0 : 0.0;
 }

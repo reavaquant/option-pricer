@@ -11,5 +11,5 @@ OptionType PutOption::getOptionType() const { return OptionType::Put; }
  * @return The off of the option.
  */
 double PutOption::payoff(double asset_price) const {
-    return asset_price < strike_ ? strike_ - asset_price : 0.0;
+    return _strike >= asset_price ? _strike - asset_price : 0.0;
 }

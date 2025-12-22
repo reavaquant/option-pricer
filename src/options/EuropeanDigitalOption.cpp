@@ -8,7 +8,7 @@
  * @param strike the strike price of the option.
  * @throws std::invalid_argument if expiry or strike is negative.
  */
-EuropeanDigitalOption::EuropeanDigitalOption(double expiry, double strike) : Option(expiry), strike_(strike) {
+EuropeanDigitalOption::EuropeanDigitalOption(double expiry, double strike) : Option(expiry), _strike(strike) {
     if (strike < 0.0) {
         throw std::invalid_argument("EuropeanDigitalOption: strike must be nonnegative");
     }
@@ -20,5 +20,5 @@ EuropeanDigitalOption::EuropeanDigitalOption(double expiry, double strike) : Opt
  * @return the strike price of the option.
  */
 double EuropeanDigitalOption::getStrike() const {
-    return strike_;
+    return _strike;
 }

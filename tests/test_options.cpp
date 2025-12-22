@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <vector>
+#include <stdexcept>
 
 #include "option-pricer/options/CallOption.h"
 #include "option-pricer/options/AsianCallOption.h"
@@ -66,18 +67,28 @@ int main() {
     assert(std::abs(american_put.payoff(80.0) - 20.0) < 1e-9);
     assert(std::abs(american_put.payoff(120.0)) < 1e-9);
     std::vector<double> asian_call_path = {90.0, 110.0, 120.0, 100.0};
-    const auto asian_call_payoffs = asian_call.payoffPath(asian_call_path);
-    assert(asian_call_payoffs.size() == 1);
-    assert(std::abs(asian_call_payoffs.front() - 5.0) < 1e-9);
+    const auto asian_call_payoff = asian_call.payoffPath(asian_call_path);
+    assert(std::abs(asian_call_payoff - 5.0) < 1e-9);
 
     std::vector<double> asian_put_path = {110.0, 90.0, 80.0, 70.0};
-    const auto asian_put_payoffs = asian_put.payoffPath(asian_put_path);
-    assert(asian_put_payoffs.size() == 1);
-    assert(std::abs(asian_put_payoffs.front() - 12.5) < 1e-9);
+    const auto asian_put_payoff = asian_put.payoffPath(asian_put_path);
+    assert(std::abs(asian_put_payoff - 12.5) < 1e-9);
 
     std::vector<double> empty_path;
-    assert(asian_call.payoffPath(empty_path).empty());
-    assert(asian_put.payoffPath(empty_path).empty());
+    bool threw_call = false;
+    bool threw_put = false;
+    try {
+        asian_call.payoffPath(empty_path);
+    } catch (const std::invalid_argument&) {
+        threw_call = true;
+    }
+    try {
+        asian_put.payoffPath(empty_path);
+    } catch (const std::invalid_argument&) {
+        threw_put = true;
+    }
+    assert(threw_call);
+    assert(threw_put);
 
     return 0;
 }

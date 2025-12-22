@@ -7,8 +7,7 @@
  * @param expiry the expiry of the option.
  * @param strike the strike price of the option.
  */
-AmericanCallOption::AmericanCallOption(double expiry, double strike)
-    : AmericanOption(expiry, strike) {}
+AmericanCallOption::AmericanCallOption(double expiry, double strike) : AmericanOption(expiry, strike) {}
 
 /**
  * Returns the type of the option.

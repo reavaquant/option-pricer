@@ -5,7 +5,7 @@
 
 class AmericanOption : public Option {
 protected:
-    double strike_;
+    double _strike;
 public:
     AmericanOption(double expiry, double strike);
 

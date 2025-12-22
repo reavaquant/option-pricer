@@ -1,206 +1,237 @@
-#include <stdexcept>
 #include <cmath>
-#include <cassert>
+#include <stdexcept>
 #include "CRRPricer.h"
 
 /**
- * @brief Constructor for CRRPricer.
- * @details Construct a CRRPricer object for the given option and parameters.
- * @param option the option to price
- * @param depth the depth of the binomial tree
- * @param S0 the initial spot price
- * @param U the up factor (either a return or a multiplicative factor > 0)
- * @param D the down factor (either a return or a multiplicative factor > 0)
- * @param R the risk-free rate (either a return or a multiplicative factor > 0)
- * @throw std::invalid_argument if option pointer is null, or if the option is an Asian option, or if the factors do not satisfy 0 < D < R < U
+ * @brief Construct a CRRPricer instance.
+ * @details This pricer uses the Cox-Ross-Rubinstein model to estimate the price of an option.
+ * It is constructed with an option, the depth of the binomial tree, the initial price of the underlying asset,
+ * the risk-free rate, the rate of continuous compounding of the underlying asset, and the rate of continuous dividend yield.
+ * @param option The option to be priced.
+ * @param depth The depth of the binomial tree.
+ * @param S0 The initial price of the underlying asset.
+ * @param U The rate of continuous compounding of the underlying asset.
+ * @param D The rate of continuous dividend yield.
+ * @param R The risk-free rate.
  */
-CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : option_(option), depth_(depth), S0_(S0), U_(U), D_(D), R_(R) {
-    //arbitrage check
-    if (!option_) {
-        throw std::invalid_argument("CRRPricer: option pointer must not be null");
+CRRPricer::CRRPricer(Option* option, int depth, double S0, double U, double D, double R) : _option(option), _depth(depth), _S0(S0) {
+    if (!_option) {
+        throw std::invalid_argument("CRRPricer: option is null");
     }
-    if (option_->isAsianOption()) {
-        throw std::invalid_argument("CRRPricer: Asian options are not supported");
+    if (_option->isAsianOption()) {
+        throw std::invalid_argument("CRRPricer: Asian option not supported");
     }
-
-    // Accept either multiplicative factors (>0) or returns (all three provided as returns)
-    auto as_factor = [](double x) {
-        const double factor = 1.0 + x;
-        if (factor <= 0.0) {
-            throw std::invalid_argument("CRRPricer: invalid factor after converting return");
-        }
-        return factor;
-    };
-
-    const bool looks_like_return = (U_ < 1.0 && D_ < 1.0 && R_ < 1.0);
-    if (looks_like_return) {
-        U_ = as_factor(U_);
-        D_ = as_factor(D_);
-        R_ = as_factor(R_);
-    } else {
-        if (U_ <= 0.0 || D_ <= 0.0 || R_ <= 0.0) {
-            throw std::invalid_argument("CRRPricer: multiplicative factors must be positive");
-        }
+    if (_depth < 0) {
+        throw std::invalid_argument("CRRPricer: depth must be >= 0");
     }
 
-    if (!(D_ < R_ && R_ < U_)) {
-        throw std::invalid_argument("CRRPricer: arbitrage detected (need D < R < U)");
-    }
-    if (U_ <= D_) throw std::invalid_argument("CRRPricer: up factor must exceed down factor");
+    // inputs are returns not rates so add 1
+    _U = 1.0 + U;
+    _D = 1.0 + D;
+    _R = 1.0 + R;
 
-    optionTree_.setDepth(depth_);
-    exerciseTree_.setDepth(depth_);
+    if (_U <= 0.0 || _D <= 0.0 || _R <= 0.0) {
+        throw std::invalid_argument("CRRPricer: returns must be > -100%");
+    }
+    if (!(_D < _R && _R < _U)) {
+        throw std::invalid_argument("CRRPricer: need D < R < U"); //arbitrage checks
+    }
+
+    _optionTree.setDepth(_depth);
+    _exerciseTree.setDepth(_depth);
 }
 
-/**
- * @brief Construct a CRRPricer instance using the risk-free rate and volatility.
- * @details This constructor uses the risk-free rate and volatility to compute the up and down factors for the binomial tree.
- * It first checks that the option pointer is not null, and that the depth is positive.
- * It then computes the up and down factors using the risk-free rate and volatility.
- * Finally, it checks for arbitrage and sets the depth of the binomial trees.
- * @throw std::invalid_argument if the option pointer is null, or if the depth is not positive, or if the factors do not satisfy 0 < D < R < U.
- * @param option the option to be priced
- * @param depth the depth of the binomial tree
- * @param S0 the initial spot price
- * @param r the risk-free rate (either a return or a multiplicative factor > 0)
- * @param volatility the volatility of the underlying asset (either a return or a multiplicative factor > 0)
- */
-CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double volatility)
-    : option_(option), depth_(depth), S0_(S0) {
-    if (!option_) {
-        throw std::invalid_argument("CRRPricer: option pointer must not be null");
-    }
-    if (depth_ <= 0) {
-        throw std::invalid_argument("CRRPricer: depth must be positive when using r/sigma constructor");
-    }
-
-    const double expiry = option_->getExpiry();
-    const double dt = expiry / static_cast<double>(depth_);
-    const double sigma_step = volatility * std::sqrt(dt);
-    U_ = std::exp(sigma_step);
-    D_ = std::exp(-sigma_step);
-    R_ = std::exp(r * dt);
-
-    if (!(D_ < R_ && R_ < U_)) {
-        throw std::invalid_argument("CRRPricer: arbitrage detected (need D < R < U)");
-    }
-    if (U_ <= D_) throw std::invalid_argument("CRRPricer: up factor must exceed down factor");
-
-    optionTree_.setDepth(depth_);
-    exerciseTree_.setDepth(depth_);
-}
 
 /**
- * @brief Compute the price of an option using the CRR binomial tree method.
+ * @brief Construct a CRRPricer instance with parameters.
  * 
- * @details This function uses the CRR binomial tree method to compute the price of an option.
- * It first sets the spot price at the depth of the tree, then uses backward induction to compute the prices at each node of the tree.
+ * @details This constructor takes an option, the depth of the binomial tree,
+ * the initial price of the underlying asset, the interest rate, and the volatility.
+ * It first checks that the option is not null and that the depth is greater than 0.
+ * Then it computes the time step of the binomial tree, and uses this to compute U, D, and R.
+ * Finally, it checks that D < R < U, and throws an exception if this is not true.
+ * 
+ * @param option The option to be priced.
+ * @param depth The depth of the binomial tree.
+ * @param S0 The initial price of the underlying asset.
+ * @param r The interest rate of the risk-free asset.
+ * @param volatility The volatility of the underlying asset.
+ */
+CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double volatility) : _option(option), _depth(depth), _S0(S0) {
+    if (!_option) {
+        throw std::invalid_argument("CRRPricer: option is null");
+    }
+    if (_option->isAsianOption()) {
+        throw std::invalid_argument("CRRPricer: Asian option not supported");
+    }
+    if (_depth <= 0) {
+        throw std::invalid_argument("CRRPricer: depth must be > 0");
+    }
+
+    double T = _option->getExpiry();
+    double dt = T / _depth;
+    if (dt <= 0.0) {
+        throw std::invalid_argument("CRRPricer: time step must be positive");
+    }
+    const double drift = (r + 0.5 * volatility * volatility) * dt;
+    const double step = volatility * std::sqrt(dt);
+    _U = std::exp(drift + step);
+    _D = std::exp(drift - step);
+    _R = std::exp(r * dt);
+
+    if (!(_D < _R && _R < _U)) {
+        throw std::invalid_argument("CRRPricer: need D < R < U");
+    }
+
+    _optionTree.setDepth(_depth);
+    _exerciseTree.setDepth(_depth);
+}
+
+/**
+ * @brief Compute the price of the option using the CRR model.
+ * 
+ * This function computes the price of the option using the CRR model.
+ * It first initializes the binomial tree with the payoff values at each node.
+ * Then it iterates over the tree from the last node to the first node, computing the
+ * value of each node based on its children. If the option is an American option,
+ * it also checks if exercising the option at each node yields a higher value than not
+ * exercising it, and updates the value and exercise decision accordingly.
+ * Finally, it sets the _computed flag to true.
+ * 
+ * @throws std::logic_error if compute() has not been called before.
  */
 void CRRPricer::compute() {
-    const double R = R_;
-    double q = (R - D_) / (U_ - D_);
-    const bool isAmerican = option_->isAmericanOption();
+    double q = (_R - _D) / (_U - _D);
+    bool american = _option->isAmericanOption();
 
-    //set spot price at the depth
-    double s = S0_;
-    for (int k = 0; k < depth_; ++k) s *= D_;
-    const double ratio = U_ / D_;
-    for (int i = 0; i <= depth_; ++i) {
-        const double payoff = option_->payoff(s);
-        optionTree_.setNode(depth_, i, payoff);
-        exerciseTree_.setNode(depth_, i, isAmerican && payoff > 0.0);
-        s *= ratio;
+    double s = 0.0;
+    double payoff = 0.0;
+    bool exercise_now = false;
+    double up = 0.0;
+    double down = 0.0;
+    double cont = 0.0;
+    double value = 0.0;
+    bool ex = false;
+    double intrinsic = 0.0;
+
+    for (int i = 0; i <= _depth; ++i) {
+        s = _S0 * std::pow(_U, i) * std::pow(_D, _depth - i);
+        payoff = _option->payoff(s);
+        _optionTree.setNode(_depth, i, payoff);
+        exercise_now = american && payoff >= 0.0;
+        _exerciseTree.setNode(_depth, i, exercise_now);
     }
 
-    //backward induction
-    for(int n = depth_-1; n >= 0; --n) {
-        for(int i = 0; i <= n; ++i) {
-            const double up = optionTree_.getNode(n + 1, i + 1);
-            const double down = optionTree_.getNode(n + 1, i);
-            const double cont = (q * up + (1.0 - q) * down) / R;
-            double nodeValue = cont;
-            bool exercise = false;
-            if (isAmerican) {
-                const double spot = S0_ * std::pow(U_, i) * std::pow(D_, n - i);
-                const double intrinsic = option_->payoff(spot);
+    for (int n = _depth - 1; n >= 0; --n) {
+        for (int i = 0; i <= n; ++i) {
+            up = _optionTree.getNode(n + 1, i + 1);
+            down = _optionTree.getNode(n + 1, i);
+            cont = (q * up + (1.0 - q) * down) / _R;
+            value = cont;
+            ex = false;
+
+            if (american) {
+                s = _S0 * std::pow(_U, i) * std::pow(_D, n - i);
+                intrinsic = _option->payoff(s);
                 if (intrinsic >= cont) {
-                    nodeValue = intrinsic;
-                    exercise = true;
+                    value = intrinsic;
+                    ex = true;
                 }
             }
-            optionTree_.setNode(n, i, nodeValue);
-            exerciseTree_.setNode(n, i, exercise);
+
+            _optionTree.setNode(n, i, value);
+            _exerciseTree.setNode(n, i, ex);
         }
     }
-    computed_ = true;
+    _computed = true;
 }
 
 /**
- * @brief Get the price of the option at a specific node in the binary tree.
- * @details This function returns the price of the option at the node (n, i) in the binary tree.
- * It requires that the compute() function has been called first.
- * @param n The level of the binary tree.
- * @param i The index of the node at level n.
- * @return The price of the option at the node (n, i).
+ * @brief Get the value of the option at node (n, i).
+ * 
+ * This function returns the value of the option at node (n, i) in the
+ * binomial tree. If compute() has not been called before, a
+ * std::logic_error is thrown.
+ * 
+ * @param n the level of the binomial tree
+ * @param i the index of the node in the level
+ * 
+ * @return the value of the option at node (n, i).
+ * 
+ * @throws std::logic_error if compute() has not been called before.
  */
 double CRRPricer::get(int n, int i) {
-    assert(computed_ && "CRR_EuroPricer::get requires compute() first.");
-    return optionTree_.getNode(n, i);
+    if (!_computed) {
+        throw std::logic_error("CRRPricer::get needs compute() first");
+    }
+    return _optionTree.getNode(n, i);
 }
 
+/**
+ * @brief Get the exercise decision at node (n, i).
+ * 
+ * @param n the level of the binary tree
+ * @param i the index of the node in the level
+ * @return true if the option should be exercised at node (n, i), false otherwise.
+ * 
+ * @throws std::logic_error if compute() has not been called before.
+ */
 bool CRRPricer::getExercise(int n, int i) {
-    assert(computed_ && "CRRPricer::getExercise requires compute() first.");
-    return exerciseTree_.getNode(n, i);
+    if (!_computed) {
+        throw std::logic_error("CRRPricer::getExercise needs compute() first");
+    }
+    return _exerciseTree.getNode(n, i);
 }
 
 /**
  * @brief Calculate the binomial coefficient N choose k.
- * @details This function calculates the binomial coefficient N choose k, i.e. the number of combinations of k items chosen from a set of N items.
- * @param N The total number of items.
+ *
+ * @param N The number of items to choose from.
  * @param k The number of items to choose.
  * @return The binomial coefficient N choose k.
+ *
+ * It also uses symmetry to reduce the number of operations needed.
  */
-long double CRRPricer::binom_coeff(int N, int k) {
-  if (k < 0 || k > N) return 0.0L;
-  int m = std::min(k, N - k);
-  long double c = 1.0L;
-  for (int j = 1; j <= m; ++j) {
-    c = c * static_cast<long double>(N - m + j) / static_cast<long double>(j);
-  }
-  return c;
+double CRRPricer::binom_coeff(int N, int k) {
+    if (k < 0 || k > N) return 0.0;
+    if (k > N - k) k = N - k; // symetry
+    double c = 1.0;
+    for (int j = 1; j <= k; ++j) {
+        c = c * (N - k + j);
+        c = c / j;
+    }
+    return c;
 }
 
 /**
- * @brief Calculate the price of the option using the binomial model.
- * @details This function calculates the price of the option using the binomial model.
- * If closed_form is true, it will use the closed form formula to calculate the price.
- * If closed_form is false, it will use the binomial model to calculate the price.
- * Note that the closed form formula is only supported for European options.
- * @param closed_form Whether to use the closed form formula.
+ * @brief Calculate the price of the option using the CRR model.
+ * 
+ * @param closed_form If true, use the closed-form formula for European options.
  * @return The price of the option.
+ * 
+ * If closed_form is false, the price is calculated using the binomial tree.
+ * If closed_form is true, the price is calculated using the closed-form formula.
+ * Note that the closed-form formula is only valid for European options.
  */
 double CRRPricer::operator()(bool closed_form) {
-    if (option_->isAmericanOption() && closed_form) {
-        throw std::logic_error("CRRPricer: closed form formula only supported for European options");
+    if (_option->isAmericanOption() && closed_form) {
+        throw std::logic_error("CRRPricer: closed form only for European options");
     }
 
     if (!closed_form) {
-        if (!computed_) compute();
-        return optionTree_.getNode(0, 0);
+        if (!_computed) compute();
+        return _optionTree.getNode(0, 0);
     }
 
-    // closed form price
-    const double R = R_;
-    const double q = (R - D_) / (U_ - D_);
-    double s = S0_;
-    for (int k = 0; k < depth_; ++k) s *= D_;
-    const double ratio = U_ / D_;
-    double sum = 0.0;
-    for (int i = 0; i <= depth_; ++i) {
-        const double comb = binom_coeff(depth_, i);
-        const double prob = std::pow(q, i) * std::pow(1.0 - q, depth_ - i);
-        sum += comb * prob * option_->payoff(s);
-        s *= ratio; 
+    double q = (_R - _D) / (_U - _D);
+    double price = 0.0;
+    double s = 0.0;
+    double weight = 0.0;
+    for (int i = 0; i <= _depth; ++i) {
+        s = _S0 * std::pow(_U, i) * std::pow(_D, _depth - i);
+        weight = binom_coeff(_depth, i);
+        weight *= std::pow(q, i) * std::pow(1.0 - q, _depth - i);
+        price += weight * _option->payoff(s);
     }
-    return sum / std::pow(R, depth_);
+    return price / std::pow(_R, _depth);
 }

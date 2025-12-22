@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <utility>
 
-AsianCallOption::AsianCallOption(std::vector<double> timeSteps, double strike) : AsianOption(std::move(timeSteps)), strike_(strike) {}
+AsianCallOption::AsianCallOption(std::vector<double> timeSteps, double strike) : AsianOption(std::move(timeSteps)), _strike(strike) {}
 
 /**
  * @brief The payoff of an Asian call option.
@@ -11,7 +11,7 @@ AsianCallOption::AsianCallOption(std::vector<double> timeSteps, double strike) :
  * @return The payoff of the option.
  */
 double AsianCallOption::payoff(double asset_price) const {
-    return std::max(asset_price - strike_, 0.0);
+    return std::max(asset_price - _strike, 0.0);
 }
 
 /**

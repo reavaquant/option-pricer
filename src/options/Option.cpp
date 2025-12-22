@@ -2,8 +2,8 @@
 #include <stdexcept>
 #include <vector>
 
-Option::Option(double expiry) : expiry_(expiry) {
-    if (expiry_ < 0) {
+Option::Option(double expiry) : _expiry(expiry) {
+    if (_expiry < 0) {
         throw std::invalid_argument("Option: expiry must be nonnegative");
     }
 }
@@ -12,7 +12,11 @@ Option::Option(double expiry) : expiry_(expiry) {
  * @return the expiry time of the option.
  */
 double Option::getExpiry() const {
-    return expiry_;
+    return _expiry;
+}
+
+std::vector<double> Option::getTimeSteps() const {
+    return {_expiry};
 }
 
 /**
@@ -20,19 +24,13 @@ double Option::getExpiry() const {
  *
  * @param path The list of spot prices.
  *
- * @return A vector containing the payoff of the option.
- *
- * 
- * This function calculates the payoff path for an option by
- * taking the last element of the list of spot prices and
- * then calling the payoff function with this last element.
+ * @return The payoff of the option.
  */
-std::vector<double> Option::payoffPath(const std::vector<double>& path) const {
-    std::vector<double> payoff_values;
-    if (!path.empty()) {
-        payoff_values.push_back(payoff(path.back()));
+double Option::payoffPath(const std::vector<double>& path) const {
+    if (path.empty()) {
+        throw std::invalid_argument("Option: path cannot be empty");
     }
-    return payoff_values;
+    return payoff(path.back());
 }
 
 /**

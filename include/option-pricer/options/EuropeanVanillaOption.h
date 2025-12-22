@@ -4,7 +4,7 @@
 
 class EuropeanVanillaOption : public Option {
 protected:
-    double strike_;
+    double _strike;
 public:
     EuropeanVanillaOption(double expiry, double strike);
 

@@ -9,8 +9,7 @@
  * @param timeSteps the time steps of the option.
  * @param strike the strike price of the option.
  */
-AsianPutOption::AsianPutOption(std::vector<double> timeSteps, double strike)
-    : AsianOption(std::move(timeSteps)), strike_(strike) {}
+AsianPutOption::AsianPutOption(std::vector<double> timeSteps, double strike) : AsianOption(std::move(timeSteps)), _strike(strike) {}
 
 /**
  * Returns the payoff of an Asian put option given the spot price.
@@ -21,7 +20,7 @@ AsianPutOption::AsianPutOption(std::vector<double> timeSteps, double strike)
  * @return the payoff of the option.
  */
 double AsianPutOption::payoff(double asset_price) const {
-    return std::max(strike_ - asset_price, 0.0);
+    return std::max(_strike - asset_price, 0.0);
 }
 
 /**
