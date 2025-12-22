@@ -1,122 +1,64 @@
-\PassOptionsToPackage{nopatch=eqnum}{microtype}
-\documentclass[9pt,twocolumn,twoside]{ilcss}
-\templatetype{ilcssworkingpaper} % Choose template 
-\additionalelement{} % désactive le float "Significance Statement" du template pour éviter les erreurs si non utilisé
-\title{C++ for Finance : A multiple type Option Pricer}	
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
 
-% Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
-\author{Benjamin Emily, Simon Carrière, Martin Verscheld, Hiba ElQoraichy}
-
-% Please give the surname of the lead author for the running footer
-\leadauthor{Emily} 
-
-\begin{abstract}
-Please provide an abstract of no more than 250 words in a single paragraph. Abstracts should explain to the general reader the major contributions of the article. References in the abstract must be cited in full within the abstract itself and cited in the text. 
-\end{abstract}
-
-\dates{\today}
+\title{Black--Scholes Monte Carlo Pricer}
+\author{Option Pricer Project}
+\date{\today}
 
 \begin{document}
-
 \maketitle
-\thispagestyle{firststyle}
 
-% If your first paragraph (i.e. with the \dropcap) contains a list environment (quote, quotation, theorem, definition, enumerate, itemize...), the line after the list may have some extra indentation. If this is the case, add \parshape=0 to the end of the list environment.
+\section{Goal}
+Estimate the price of options (vanilla, digital, Asian) under Black--Scholes via Monte Carlo, provide a confidence interval, and avoid storing all paths to keep memory low.
 
-\dropcap{I}ntroduction
-
-\medskip
-
-Ce projet implémente un pricer multi-supports en C++ : modèles fermés Black--Scholes, Monte Carlo parallélisé (antithétiques, contrôle variate), et arbre binomial CRR pour gérer les options européennes, américaines et asiatiques via une interface commune d'options.
-
-\section*{Organisation BinaryTree (h/tpp/cpp)}
-
-\paragraph{Interface (.h).}
-Le fichier d'en-tête déclare le template \\
-\texttt{BinaryTree<T>} et inclut \texttt{BinaryTree.tpp} en fin de fichier pour que les définitions soient visibles dans chaque unité de traduction qui inclut l'interface.
-
-\paragraph{Implémentation template (.tpp).}
-Le \texttt{.tpp} contient les définitions des méthodes templées, séparées pour garder le \texttt{.h} concis tout en restant inclus par celui-ci (sinon on aurait des symboles non résolus au link).
-
-\paragraph{Instanciations explicites (.cpp).}
-Le \texttt{BinaryTree.cpp} inclut le couple \texttt{.hpp/.tpp} puis instancie explicitement les variantes réellement utilisées (\texttt{double}, \texttt{bool}, \texttt{int}) afin de centraliser la génération de code.
-
-\medskip
-
-Séparer interface et implémentation template évite \\
- d'entasser toutes les définitions dans un unique \texttt{.h}, garde les headers lisibles, réduit les recompilations (les instanciations explicites sont centralisées dans un seul \texttt{.cpp}) et limite le risque de symboles dupliqués en link si un client oublie une \texttt{\#include}.
-
-
-
-\section*{Black Scholes Monte Carlo Pricer}
-
-\subsection{Génération et parallélisme : \texorpdfstring{\texttt{generate(nb\_paths)}}{generate(nb\_paths)}}
-
-\paragraph{Principe général.}
-Un appel à \texttt{generate(nb\_paths)} ajoute \emph{nb\_paths nouvelles trajectoires} à l'estimateur courant (on peut appeler plusieurs fois pour accumuler).
-
-\paragraph{Découpage multi-thread.}
-On choisit 
+\section{Model}
+Underlying follows a geometric Brownian motion
 \[
-\texttt{thread\_count}=\min(\texttt{nb\_paths},\,\texttt{hardware\_concurrency()}),
+\mathrm{d}S_t = r S_t\,\mathrm{d}t + \sigma S_t\,\mathrm{d}W_t,
+\quad
+S_{t_{k+1}} = S_{t_k}\exp\!\big((r-\tfrac12\sigma^2)\Delta t + \sigma \sqrt{\Delta t}\,Z_k\big),\; Z_k\sim\mathcal N(0,1).
 \]
-où \texttt{hardware\_concurrency()} est le \emph{nombre indicatif de c\oe urs matériels} selon la STL. 
-Les \texttt{nb\_paths} sont réparties en \emph{chunks} quasi égaux (\texttt{base} + distribution du \texttt{remainder}). 
-Chaque thread lance \texttt{simulate\_chunk(paths)} et renvoie des statistiques locales (pas de partage d'état pendant la simulation, donc pas de verrou).
+The time grid $\{t_k\}$ comes directly from the option (full path for an Asian).
 
-\paragraph{Simulation d'un chunk.}
-On simule des paires \emph{antithétiques}: à chaque pas, on tire $Z\sim\mathcal{N}(0,1)$ via \texttt{MT::rand\_norm()} et on avance deux chemins en parallèle:
-\[
-S \leftarrow S\times \exp(\text{drift} + \text{vol}\cdot Z)
-\quad\text{et}\quad
-S \leftarrow S\times \exp(\text{drift} - \text{vol}\cdot Z).
-\]
-\textbf{Antithétiques} = technique de \emph{réduction de variance}: coupler $Z$ et $-Z$ annule une part de l'aléa.
-On remplit deux buffers \texttt{path\_pos} et \texttt{path\_neg} \emph{locaux au thread} pour donner le chemin à \texttt{payoffPath}. 
-Pour une européenne, seul le dernier point est utilisé par le payoff; pour une asiatique, toute la trajectoire est lue.
-Le payoff est actualisé par $e^{-rT}$ (multiplicateur \emph{d'actualisation}).
-
-Les tirages pseudo-aléatoires proviennent d'un moteur Mersenne \emph{thread\_local}: chaque thread dispose de son générateur, éliminant toute contention ou data race sur le RNG.
-
-\paragraph{Contrôle variate (vanilles).}
-Si l'option est une vanille européenne, on active un contrôle variate parfait: on calcule une fois le prix Black--Scholes fermé et, pour chaque trajectoire, on remplace l'échantillon par \texttt{payoff - payoff + prix\_BS} (variance quasi nulle et prix identique à la formule). Pour les options path-dépendantes ou américaines, le contrôle n'est pas utilisé et l'estimateur reste purement Monte Carlo.
-
-\subsection{Statistiques en ligne et agrégation}
-
-\paragraph{Structure locale.}
-Chaque thread retourne un triplet compact:
-\begin{verbatim}
-long long n; double mean; double M2;
-\end{verbatim}
+\section{Simulation algorithm}
 \begin{itemize}
-\item $n$ : nombre d'échantillons produits par le thread,
-\item \texttt{mean} : moyenne en ligne (algorithme de \textbf{Welford}), 
-\item \texttt{M2} : somme des carrés centrés, utile pour la variance $s^2=M2/(n-1)$.
+  \item Precompute per-step terms $(r - \tfrac12\sigma^2)\Delta t_k$ and $\sigma\sqrt{\Delta t_k}$; reject non-increasing time steps.
+  \item Antithetic variates: for each Gaussian draw $Z$, simulate two paths $S^+$ and $S^-$ using $Z$ and $-Z$ (variance reduction at no extra cost).
+  \item Path construction: start both paths at $S_0$, iterate over steps applying the exponential update and store $S^+$, $S^-$ in reusable vectors.
+  \item Payoff: evaluate \texttt{option\_->payoffPath(path)} on each completed path, then discount by $\exp(-rT)$.
+  \item Online stats: update the running mean and $M2$ (Welford) with each discounted payoff; no need to retain past payoffs.
 \end{itemize}
 
-\paragraph{Welford (définition).}
-Méthode \emph{numériquement stable} pour mettre à jour moyenne et variance sans conserver tous les échantillons:
-$$
-\mu_k=\mu_{k-1}+\frac{x_k-\mu_{k-1}}{k},
-$$
-$$
-M2_k = M2_{k-1}+(x_k-\mu_{k-1})(x_k-\mu_k).
-$$
-
-\paragraph{Fusion parallèle (Chan).}
-On fusionne les agrégats d'un thread $b$ dans l'agrégat global $a$ via:
+\section{Mean and variance estimator}
+Online Welford updates:
 \[
-\mu \leftarrow \mu_a + \delta\,\frac{n_b}{n_a+n_b},
-\qquad
-M2 \leftarrow M2_a + M2_b + \delta^2\,\frac{n_a n_b}{n_a+n_b},
+\hat{P}_{n} = \hat{P}_{n-1} + \frac{X_n - \hat{P}_{n-1}}{n},
+\quad
+M2_n = M2_{n-1} + (X_n - \hat{P}_{n-1})(X_n - \hat{P}_n).
 \]
-avec $\delta=\mu_b-\mu_a$. 
-C'est \emph{thread-safe} car chaque thread calcule d'abord ses statistiques \emph{locales}, puis on agrège séquentiellement.
+Estimated variance: $\hat{\sigma}^2 = M2_n/(n-1)$, standard error $\hat{\sigma}/\sqrt{n}$.
 
-\subsection{Différences}
+\section{Confidence interval}
+\[
+\text{CI}_{95\%} = \hat{P}_n \pm 1.96 \times \frac{\hat{\sigma}}{\sqrt{n}},
+\]
+available via \texttt{confidenceInterval()} after at least two paths.
 
+\section{Key implementation points (\texttt{generate})}
 \begin{itemize}
-  \item \emph{Différences/plus} : parallélisation multi-threads, tirages \texttt{thread\_local} (sécurisés en présence de threads), validation stricte des dates de monitoring, antithétiques et estimation en ligne sans stockage.
+  \item Inputs: number of paths $N$; if $N\le 0$ the call is ignored.
+  \item Uses two reusable vectors (\texttt{path\_pos}, \texttt{path\_neg}) sized to the time grid.
+  \item For each Gaussian $Z$: update $S^+$ and $S^-$ across all steps, then:
+    \begin{itemize}
+      \item compute discounted payoff of $S^+$, increment \texttt{nb\_paths\_}, update mean and $M2$;
+      \item if more paths remain, do the same with $S^-$ (antithetic) and increment counters.
+    \end{itemize}
+  \item Discount factor is $\exp(-rT)$ with $T$ the last time step; \texttt{nb\_paths\_}, \texttt{estimate\_}, and \texttt{M2\_} track the current simulation state.
+  \item \texttt{price()} throws if no paths were generated; \texttt{confidenceInterval()} throws if fewer than two paths are available.
 \end{itemize}
 
 \end{document}

@@ -7,8 +7,8 @@
 template <class T>
 class BinaryTree {
 public:
-  BinaryTree() : depth_(0) {}
-  explicit BinaryTree(int depth) : depth_(0) { setDepth(depth); }
+  BinaryTree() : _depth(0) {}
+  explicit BinaryTree(int depth) : _depth(0) { setDepth(depth); }
 
   /// Set the depth of the binary tree.
   ///
@@ -19,30 +19,30 @@ public:
     if (depth < 0) {
       throw std::invalid_argument("BinaryTree: depth must be >= 0");
     }
-    depth_ = depth;
-    tree_.assign(depth_ + 1, std::vector<T>());
-    for (int n = 0; n <= depth_; ++n) {
-      tree_[n].assign(n + 1, T());
+    _depth = depth;
+    _tree.assign(_depth + 1, std::vector<T>());
+    for (int n = 0; n <= _depth; ++n) {
+      _tree[n].assign(n + 1, T());
     }
   }
 
-  int depth() const { return depth_; }
+  int depth() const { return _depth; }
 
   /// Set a node in the binary tree.
   ///
-  /// @param n the level of the binary tree (0 <= n <= depth_).
+  /// @param n the level of the binary tree (0 <= n <= _depth).
   /// @param i the index of the node in the level (0 <= i <= n).
   /// @param value the value to be stored in the node.
   ///
   /// @throws std::out_of_range if n or i are out of range.
   void setNode(int n, int i, const T& value) {
     checkIndices(n, i);
-    tree_[n][i] = value;
+    _tree[n][i] = value;
   }
 
   /// @brief Get a node in the binary tree.
   ///
-  /// @param n the level of the binary tree (0 <= n <= depth_).
+  /// @param n the level of the binary tree (0 <= n <= _depth).
   /// @param i the index of the node in the level (0 <= i <= n).
   ///
   /// @return the value stored in the node.
@@ -50,7 +50,7 @@ public:
   /// @throws std::out_of_range if n or i are out of range.
   T getNode(int n, int i) const {
     checkIndices(n, i);
-    return tree_[n][i];
+    return _tree[n][i];
   }
 
   /// Display the binary tree in a formatted manner.
@@ -69,13 +69,13 @@ public:
     int pad = 0;
     int connIndent = 0;
 
-    for (int n = 0; n <= depth_; ++n) {
-      indent = (depth_ - n) * gap / 2;
+    for (int n = 0; n <= _depth; ++n) {
+      indent = (_depth - n) * gap / 2;
       if (indent < 0) indent = 0;
       os << std::string(indent, ' ');
       for (int i = 0; i <= n; ++i) {
         std::ostringstream ss;
-        ss << tree_[n][i];
+        ss << _tree[n][i];
         val = ss.str();
         pad = gap - (int)val.size();
         if (pad < 1) pad = 1;
@@ -84,7 +84,7 @@ public:
       }
       os << '\n';
 
-      if (n < depth_) {
+      if (n < _depth) {
         connIndent = indent - 1;
         if (connIndent < 0) connIndent = 0;
         os << std::string(connIndent, ' ');
@@ -98,17 +98,17 @@ public:
   }
 
 private:
-  int depth_;
-  std::vector<std::vector<T>> tree_;
+  int _depth;
+  std::vector<std::vector<T>> _tree;
 
   /// @brief Check if the indices are valid.
   ///
-  /// @param n the level of the binary tree (0 <= n <= depth_).
+  /// @param n the level of the binary tree (0 <= n <= _depth).
   /// @param i the index of the node in the level (0 <= i <= n).
   ///
   /// @throws std::out_of_range if n or i are out of range.
   void checkIndices(int n, int i) const {
-    if (n < 0 || n > depth_) throw std::out_of_range("BinaryTree: n out of range");
+    if (n < 0 || n > _depth) throw std::out_of_range("BinaryTree: n out of range");
     if (i < 0 || i > n) throw std::out_of_range("BinaryTree: i out of range");
   }
 
@@ -120,7 +120,7 @@ private:
   /// @return The maximum width of the values in the binary tree.
   std::size_t valueWidth() const {
     std::size_t w = 1;
-    for (const auto& level : tree_) {
+    for (const auto& level : _tree) {
       for (const auto& v : level) {
         std::ostringstream ss;
         ss << v;

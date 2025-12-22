@@ -6,7 +6,7 @@ class BlackScholesPricer; // forward declaration
 
 class EuropeanDigitalOption : public Option {
 protected:
-    double strike_;
+    double _strike;
 public:
     EuropeanDigitalOption(double expiry, double strike);
 
