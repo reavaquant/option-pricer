@@ -73,9 +73,10 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double vola
     if (dt <= 0.0) {
         throw std::invalid_argument("CRRPricer: time step must be positive");
     }
-    double step = volatility * std::sqrt(dt);
-    U_ = std::exp(step);
-    D_ = std::exp(-step);
+    const double drift = (r + 0.5 * volatility * volatility) * dt;
+    const double step = volatility * std::sqrt(dt);
+    U_ = std::exp(drift + step);
+    D_ = std::exp(drift - step);
     R_ = std::exp(r * dt);
 
     if (!(D_ < R_ && R_ < U_)) {
@@ -105,6 +106,7 @@ void CRRPricer::compute() {
 
     double s = 0.0;
     double payoff = 0.0;
+    bool exercise_now = false;
     double up = 0.0;
     double down = 0.0;
     double cont = 0.0;
@@ -116,7 +118,8 @@ void CRRPricer::compute() {
         s = S0_ * std::pow(U_, i) * std::pow(D_, depth_ - i);
         payoff = option_->payoff(s);
         optionTree_.setNode(depth_, i, payoff);
-        exerciseTree_.setNode(depth_, i, american && payoff > 0.0);
+        exercise_now = american && payoff >= 0.0;
+        exerciseTree_.setNode(depth_, i, exercise_now);
     }
 
     for (int n = depth_ - 1; n >= 0; --n) {
@@ -130,7 +133,7 @@ void CRRPricer::compute() {
             if (american) {
                 s = S0_ * std::pow(U_, i) * std::pow(D_, n - i);
                 intrinsic = option_->payoff(s);
-                if (intrinsic > cont) {
+                if (intrinsic >= cont) {
                     value = intrinsic;
                     ex = true;
                 }

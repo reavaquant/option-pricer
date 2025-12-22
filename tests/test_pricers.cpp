@@ -141,8 +141,10 @@ int main() {
     const double ctor_sigma = 0.2;
     CallOption crr_call_params(1.0, 100.0);
     const double dt = crr_call_params.getExpiry() / static_cast<double>(crrDepth);
-    const double derivedU = std::exp(ctor_sigma * std::sqrt(dt));
-    const double derivedD = std::exp(-ctor_sigma * std::sqrt(dt));
+    const double drift = (ctor_rate + 0.5 * ctor_sigma * ctor_sigma) * dt;
+    const double step = ctor_sigma * std::sqrt(dt);
+    const double derivedU = std::exp(drift + step);
+    const double derivedD = std::exp(drift - step);
     const double derivedR = std::exp(ctor_rate * dt);
     // le ctor prend des rendements, donc on passe (facteur - 1.0)
     CRRPricer crr_from_params(&crr_call_params, crrDepth, crrS0, derivedU - 1.0, derivedD - 1.0, derivedR - 1.0);

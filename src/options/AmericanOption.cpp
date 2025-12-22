@@ -1,6 +1,10 @@
 #include "AmericanOption.h"
 
-AmericanOption::AmericanOption(double expiry, double strike) : Option(expiry), strike_(strike) {}
+AmericanOption::AmericanOption(double expiry, double strike) : Option(expiry), strike_(strike) {
+    if (strike < 0.0) {
+        throw std::invalid_argument("AmericanOption: strike must be nonnegative");
+    }
+}
 
 /**
  * Returns the strike price of the American option.
