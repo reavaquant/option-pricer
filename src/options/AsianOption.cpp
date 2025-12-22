@@ -3,16 +3,11 @@
 #include <utility>
 #include <vector>
 
-namespace {
-double extractExpiry(const std::vector<double>& timeSteps) {
-    if (timeSteps.empty()) {
+AsianOption::AsianOption(std::vector<double> timeSteps) : Option(timeSteps.empty() ? 0.0 : timeSteps.back()), timeSteps_(std::move(timeSteps)) {
+    if (timeSteps_.empty()) {
         throw std::invalid_argument("AsianOption: time steps cannot be empty");
     }
-    return timeSteps.back();
 }
-}
-
-AsianOption::AsianOption(std::vector<double> timeSteps) : Option(extractExpiry(timeSteps)), timeSteps_(std::move(timeSteps)) {}
 
 /**
  * @brief Returns the time steps associated with the Asian option.
@@ -28,21 +23,23 @@ std::vector<double> AsianOption::getTimeSteps() const {
  *
  * @param path The list of spot prices.
  *
- * @return A vector containing the payoff of the option.
+ * @return The payoff of the option.
  *
  * 
  * This function calculates the payoff path for an Asian option by
  * taking the average of the spot prices and then calling
  * the payoff function with this average.
  */
-std::vector<double> AsianOption::payoffPath(const std::vector<double>& path) const {
-    if (path.empty()) return {};
+double AsianOption::payoffPath(const std::vector<double>& path) const {
+    if (path.empty()) {
+        throw std::invalid_argument("AsianOption: path cannot be empty");
+    }
     double sum = 0.0;
     for (double price : path) {
         sum += price;
     }
     const double avg = sum / path.size();
-    return {payoff(avg)};
+    return payoff(avg);
 }
 
 /**

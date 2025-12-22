@@ -1,12 +1,7 @@
-#include <algorithm>
 #include <cmath>
-#include <limits>
 #include <stdexcept>
-#include <thread>
 #include <vector>
-#include "BlackScholesPricer.h"
 #include "BlackScholesMCPricer.h"
-#include "AsianOption.h"
 #include "MT.h"
 
 
@@ -28,43 +23,35 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
         throw std::invalid_argument("BlackScholesMCPricer: option pointer must not be null");
     }
 
-    // Cache time steps once
-    auto* asian = dynamic_cast<AsianOption*>(option_);
-    if (asian) {
-        time_steps_ = asian->getTimeSteps();
-    } else if (option_->isAsianOption()) {
-        throw std::invalid_argument("BlackScholesMCPricer: option flagged as Asian but cast failed");
-    }
-    if (time_steps_.empty()) {
-        time_steps_.push_back(option_->getExpiry());
-    }
+    nb_paths_ = 0;
+    estimate_ = 0.0;
+    M2_ = 0.0;
 
+    time_steps_ = option_->getTimeSteps();
+
+    std::size_t steps = time_steps_.size();
+    if (steps == 0) {
+        throw std::invalid_argument("BlackScholesMCPricer: need at least one time step");
+    }
+    drift_dt_.resize(steps);
+    vol_sqrt_dt_.resize(steps);
     double last_t = 0.0;
-    time_steps_.shrink_to_fit();
-    drift_dt_.resize(time_steps_.size());
-    vol_sqrt_dt_.resize(time_steps_.size());
-    const double drift = interest_rate_ - 0.5 * volatility_ * volatility_;
-    double t = 0;
-    double dt = 0;
-    for (std::size_t i = 0; i < time_steps_.size(); ++i) {
-        t = time_steps_[i];
+    double drift = interest_rate_ - 0.5 * volatility_ * volatility_;
+    std::size_t idx = 0;
+    double t = 0.0;
+    double dt = 0.0;
+    while (idx < steps) {
+        t = time_steps_[idx];
         dt = t - last_t;
-        drift_dt_[i] = drift * dt;
-        vol_sqrt_dt_[i] = volatility_ * std::sqrt(dt);
+        if (dt <= 0.0) {
+            throw std::invalid_argument("BlackScholesMCPricer: time steps must be increasing");
+        }
+        drift_dt_[idx] = drift * dt;
+        vol_sqrt_dt_[idx] = volatility_ * std::sqrt(dt);
         last_t = t;
+        idx++;
     }
-    maturity_ = time_steps_.back();
-    const double expiry = option_->getExpiry();
-    if (std::abs(maturity_ - expiry) > 1e-9) {
-        throw std::invalid_argument("BlackScholesMCPricer: last time step must match option expiry");
-    }
-
-    // Control variate
-    if (auto* vanilla = dynamic_cast<EuropeanVanillaOption*>(option_)) {
-        BlackScholesPricer bs_control(vanilla, initial_price_, interest_rate_, volatility_);
-        control_mean_ = bs_control.price();
-        has_control_variate_ = true;
-    }
+    maturity_ = time_steps_[steps - 1];
 }
 
 /**
@@ -74,18 +61,13 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
  * This function returns the number of paths used for Monte Carlo simulation of an option.
  * The number of paths is set by the generate() function.
  */
-long long BlackScholesMCPricer::getNbPaths() const {
+int BlackScholesMCPricer::getNbPaths() const {
     return nb_paths_;
 }
-
-
 
 /**
  * @brief Generate Monte Carlo paths for an option.
  * @details This function generates Monte Carlo paths for an option using the given number of paths.
- * The paths are generated in parallel using multiple threads to speed up the computation.
- * The function returns the local statistics of the generated paths, which are used to compute the price of the option.
- * The function also updates the local statistics of the BlackScholesMCPricer object.
  * @param nb_paths The number of paths to generate.
  */
 void BlackScholesMCPricer::generate(int nb_paths) {
@@ -93,114 +75,47 @@ void BlackScholesMCPricer::generate(int nb_paths) {
         return;
     }
 
-    struct LocalStats {
-        long long n{0};
-        double mean{0.0};
-        double M2{0.0};
-    };
-
     const std::size_t steps = time_steps_.size();
+    std::vector<double> path_pos(steps);
+    std::vector<double> path_neg(steps);
+    const double df = std::exp(-interest_rate_ * maturity_);
+    double s_pos = 0.0;
+    double s_neg = 0.0;
+    double z = 0.0;
+    double payoff_discounted = 0.0;
+    double delta = 0.0;
 
-    auto simulate_chunk = [this, steps](int paths) -> LocalStats {
-        LocalStats stats;
-        if (paths <= 0) return stats;
+    int generated = 0;
+    while (generated < nb_paths) {
+        s_pos = initial_price_;
+        s_neg = initial_price_;
 
-        std::vector<double> path_pos(steps);
-        std::vector<double> path_neg(steps);
-
-        int generated = 0;
-
-        while (generated < paths) {
-            double s_pos = initial_price_;
-            double s_neg = initial_price_;
-
-            double step_drift = 0;
-            double step_vol = 0;
-            double z = 0;
-            double exp_pos = 0;
-            double exp_neg = 0;
-
-            // Antithetic pairing halves variance by coupling z with -z
-            for (std::size_t i = 0; i < steps; ++i) {
-                step_drift = drift_dt_[i];
-                step_vol = vol_sqrt_dt_[i];
-                if (step_drift != 0.0 || step_vol != 0.0) { // skip exp() when dt == 0
-                    z = MT::rand_norm();
-                    exp_pos = std::exp(step_drift + step_vol * z);
-                    exp_neg = std::exp(step_drift - step_vol * z);
-                    s_pos *= exp_pos;
-                    s_neg *= exp_neg;
-                }
-                path_pos[i] = s_pos;
-                path_neg[i] = s_neg;
-            }
-
-            auto update_local = [&stats](double sample) {
-                ++stats.n;
-                const double delta = sample - stats.mean;
-                stats.mean += delta / static_cast<double>(stats.n);
-                const double delta2 = sample - stats.mean;
-                stats.M2 += delta * delta2;
-            };
-
-            const auto payoffs_pos = option_->payoffPath(path_pos);
-            if (!payoffs_pos.empty() && generated < paths) {
-                double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_pos.back();
-                if (has_control_variate_) {
-                    discounted = discounted - discounted + control_mean_;
-                }
-                update_local(discounted);
-                ++generated;
-            }
-
-            const auto payoffs_neg = option_->payoffPath(path_neg);
-            if (!payoffs_neg.empty() && generated < paths) {
-                double discounted = std::exp(-interest_rate_ * maturity_) * payoffs_neg.back();
-                if (has_control_variate_) {
-                    discounted = discounted - discounted + control_mean_;
-                }
-                update_local(discounted);
-                ++generated;
-            }
+        for (std::size_t k = 0; k < steps; ++k) { // construct both path
+            z = MT::rand_norm();
+            s_pos *= std::exp(drift_dt_[k] + vol_sqrt_dt_[k] * z);
+            s_neg *= std::exp(drift_dt_[k] - vol_sqrt_dt_[k] * z);
+            path_pos[k] = s_pos;
+            path_neg[k] = s_neg;
         }
-        return stats;
-    };
 
-    const unsigned int hw_threads = std::max(1u, std::thread::hardware_concurrency());
-    const int thread_count = std::min(nb_paths, static_cast<int>(hw_threads));
-    const int base = nb_paths / thread_count;
-    int remainder = nb_paths % thread_count;
+        payoff_discounted = df * option_->payoffPath(path_pos);
+        // update mean
+        nb_paths_++;
+        delta = payoff_discounted - estimate_;
+        double n = (double)nb_paths_;
+        estimate_ += delta / n;
+        M2_ += delta * (payoff_discounted - estimate_); // welford algorithm for variance
+        generated++;
 
-    std::vector<LocalStats> partial(thread_count);
-    std::vector<std::thread> workers;
-    workers.reserve(thread_count);
-
-    for (int i = 0; i < thread_count; ++i) {
-        const int paths = base + (i < remainder ? 1 : 0);
-        workers.emplace_back([&, i, paths]() { partial[i] = simulate_chunk(paths); });
-    }
-
-    for (auto& t : workers) {
-        t.join();
-    }
-
-    auto combine = [this](const LocalStats& s) {
-        if (s.n == 0) return;
-        if (nb_paths_ == 0) {
-            nb_paths_ = s.n;
-            estimate_ = s.mean;
-            M2_ = s.M2;
-            return;
+        if (generated < nb_paths) { //add negative path if nb_paths is odd
+            payoff_discounted = df * option_->payoffPath(path_neg);
+            nb_paths_++;
+            delta = payoff_discounted - estimate_;
+            n = (double)nb_paths_;
+            estimate_ += delta / n;
+            M2_ += delta * (payoff_discounted - estimate_);
+            generated++;
         }
-        const long long new_n = nb_paths_ + s.n;
-        const double delta = s.mean - estimate_;
-        estimate_ += delta * (static_cast<double>(s.n) / static_cast<double>(new_n));
-        M2_ += s.M2 + delta * delta * (static_cast<double>(nb_paths_) * static_cast<double>(s.n) / static_cast<double>(new_n));
-        nb_paths_ = new_n;
-    };
-
-    for (const auto& s : partial) {
-        combine(s);
     }
 }
 
@@ -243,10 +158,6 @@ std::vector<double> BlackScholesMCPricer::confidenceInterval() {
     }
     double variance = M2_ / static_cast<double>(nb_paths_ - 1);
     double std_err = std::sqrt(variance / static_cast<double>(nb_paths_));
-    if (std_err == 0.0) {
-        // Zero variance (e.g., perfect control variate); widen interval minimally
-        std_err = std::numeric_limits<double>::epsilon() * (1.0 + std::abs(estimate_));
-    }
-    const double z = 1.96; // 95% CI for normal distribution
+    const double z = 1.96;
     return {estimate_ - z * std_err, estimate_ + z * std_err};
 }

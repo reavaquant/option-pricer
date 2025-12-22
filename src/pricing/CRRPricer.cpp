@@ -62,6 +62,9 @@ CRRPricer::CRRPricer(Option* option, int depth, double S0, double r, double vola
     if (!option_) {
         throw std::invalid_argument("CRRPricer: option is null");
     }
+    if (option_->isAsianOption()) {
+        throw std::invalid_argument("CRRPricer: Asian option not supported");
+    }
     if (depth_ <= 0) {
         throw std::invalid_argument("CRRPricer: depth must be > 0");
     }
