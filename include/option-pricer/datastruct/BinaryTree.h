@@ -63,15 +63,21 @@ public:
   void display(std::ostream& os = std::cout) const {
     const std::size_t w = valueWidth();
     const int gap = (int)(w + 2);
+
+    int indent = 0;
+    std::string val;
+    int pad = 0;
+    int connIndent = 0;
+
     for (int n = 0; n <= depth_; ++n) {
-      int indent = (depth_ - n) * gap / 2;
+      indent = (depth_ - n) * gap / 2;
       if (indent < 0) indent = 0;
       os << std::string(indent, ' ');
       for (int i = 0; i <= n; ++i) {
         std::ostringstream ss;
         ss << tree_[n][i];
-        const std::string val = ss.str();
-        int pad = gap - (int)val.size();
+        val = ss.str();
+        pad = gap - (int)val.size();
         if (pad < 1) pad = 1;
         os << val;
         if (i < n) os << std::string(pad, ' ');
@@ -79,7 +85,7 @@ public:
       os << '\n';
 
       if (n < depth_) {
-        int connIndent = indent - 1;
+        connIndent = indent - 1;
         if (connIndent < 0) connIndent = 0;
         os << std::string(connIndent, ' ');
         for (int i = 0; i <= n; ++i) {
