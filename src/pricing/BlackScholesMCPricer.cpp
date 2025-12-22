@@ -36,7 +36,7 @@ BlackScholesMCPricer::BlackScholesMCPricer(Option* option, double initial_price,
     drift_dt_.resize(steps);
     vol_sqrt_dt_.resize(steps);
     double last_t = 0.0;
-    double drift = interest_rate_ - 0.5 * volatility_ * volatility_;
+    const double drift = interest_rate_ - 0.5 * volatility_ * volatility_;
     std::size_t idx = 0;
     double t = 0.0;
     double dt = 0.0;
@@ -65,10 +65,14 @@ int BlackScholesMCPricer::getNbPaths() const {
     return nb_paths_;
 }
 
+
 /**
  * @brief Generate Monte Carlo paths for an option.
- * @details This function generates Monte Carlo paths for an option using the given number of paths.
- * @param nb_paths The number of paths to generate.
+ * @details This function generates Monte Carlo paths for an option and updates the estimate of the option price.
+ * The number of paths is set by the user, and the function generates both positive and negative paths if the number of paths is odd.
+ * The paths are constructed by simulating the underlying asset price at each time step, and the payoff is calculated at the expiry time of the option.
+ * The estimate of the option price is updated using the welford algorithm for variance.
+ * @param nb_paths The number of Monte Carlo paths to generate.
  */
 void BlackScholesMCPricer::generate(int nb_paths) {
     if (nb_paths <= 0) {
